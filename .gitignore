@@ -1,0 +1,9 @@
+node_modules/
+.turbo/
+dist/
+.nuxt/
+.output/
+*.local
+.env
+.env.*
+!.env.example

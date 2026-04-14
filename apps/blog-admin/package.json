@@ -1,0 +1,9 @@
+{
+    "name": "@qingkong/blog-admin",
+    "version": "0.0.1",
+    "private": true,
+    "scripts": {
+      "dev": "echo 'blog-admin dev placeholder'"
+    }
+  }
+  

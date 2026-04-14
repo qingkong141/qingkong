@@ -1,0 +1,9 @@
+{
+    "name": "@qingkong/admin-shell",
+    "version": "0.0.1",
+    "private": true,
+    "scripts": {
+      "dev": "echo 'admin-shell dev placeholder'"
+    }
+  }
+  
