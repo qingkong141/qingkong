@@ -1,9 +1,13 @@
 {
-    "name": "@qingkong/nuxt3-blog",
-    "version": "0.0.1",
-    "private": true,
-    "scripts": {
-      "dev": "echo 'nuxt3-blog dev placeholder'"
-    }
+  "name": "@qingkong/nuxt3-blog",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "@qingkong/shared-types": "workspace:*"
+  },
+  "scripts": {
+    "dev": "echo 'nuxt3-blog dev placeholder'"
   }
+}
+
   

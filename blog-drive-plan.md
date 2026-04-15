@@ -188,13 +188,13 @@ shares         分享表
   - `get_current_user` 依赖注入
   - **验收**：token 刷新、注销流程完整
 
-- [ ] **Session 8**：用户接口
+- [x] **Session 8**：用户接口
   - `GET /auth/me` 当前用户信息
   - 修改密码接口
   - 头像上传（存 MinIO）接口
   - **验收**：用户信息模块接口全部通过
 
-- [ ] **Session 9**：shared-types 包
+- [x] **Session 9**：shared-types 包
   - 定义 `User` `Post` `FileItem` `Comment` `Share` `Category` `Tag` 类型
   - 发布为 workspace 包
   - **验收**：各 app 可引用 `@qingkong/shared-types`

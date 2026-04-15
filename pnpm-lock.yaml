@@ -18,7 +18,13 @@ importers:
 
   apps/drive: {}
 
-  apps/nuxt3-blog: {}
+  apps/nuxt3-blog:
+    dependencies:
+      '@qingkong/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+
+  packages/shared-types: {}
 
 packages:
 
