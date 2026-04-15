@@ -1,6 +1,7 @@
 import uuid
 import io
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
@@ -54,13 +55,34 @@ async def logout(data: RefreshRequest):
 
 @router.get("/me")
 async def me(current_user: User = Depends(get_current_user)):
-    """验证 get_current_user 是否生效"""
     return {
         "id": current_user.id,
         "username": current_user.username,
         "email": current_user.email,
-        "avatar": current_user.avatar,
+        # 有头像则返回代理地址，浏览器看不到 MinIO 真实 URL
+        "avatar": f"/qingkong/auth/avatar/{current_user.id}" if current_user.avatar else None,
     }
+
+
+@router.get("/avatar/{user_id}")
+async def get_avatar(user_id: int, db: AsyncSession = Depends(get_db)):
+    """头像代理：从 MinIO 取图片流式返回，不暴露 MinIO 地址"""
+    user = await db.get(User, user_id)
+    if not user or not user.avatar:
+        raise HTTPException(status_code=404, detail="头像不存在")
+
+    # 从存储的完整 URL 中提取 MinIO object 路径
+    # 例：http://127.0.0.1:9000/qingkong/avatars/1/xxx.jpg → avatars/1/xxx.jpg
+    bucket_prefix = f"/{settings.MINIO_BUCKET}/"
+    idx = user.avatar.find(bucket_prefix)
+    if idx == -1:
+        raise HTTPException(status_code=404, detail="头像地址格式异常")
+    object_name = user.avatar[idx + len(bucket_prefix):]
+
+    # 从 MinIO 读取图片并流式返回
+    response = minio_client.get_object(settings.MINIO_BUCKET, object_name)
+    media_type = response.headers.get("content-type", "image/jpeg")
+    return StreamingResponse(response, media_type=media_type)
 
 
 @router.put("/password", status_code=204)
