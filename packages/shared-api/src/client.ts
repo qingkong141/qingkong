@@ -32,9 +32,9 @@ apiClient.interceptors.response.use(
       if (refreshToken) {
         try {
           const res = await axios.post(`/qingkong/auth/refresh`, {
-            refresh_token: refreshToken,
+            refreshToken,
           })
-          const newToken = res.data.access_token
+          const newToken = res.data.accessToken
           localStorage.setItem('access_token', newToken)
 
           // 用新 token 重试原来的请求

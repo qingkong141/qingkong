@@ -12,10 +12,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login(data: LoginRequest) {
     const res = await authApi.login(data)
-    accessToken.value = res.access_token
-    refreshToken.value = res.refresh_token
-    localStorage.setItem('access_token', res.access_token)
-    localStorage.setItem('refresh_token', res.refresh_token)
+    accessToken.value = res.accessToken
+    refreshToken.value = res.refreshToken
+    localStorage.setItem('access_token', res.accessToken)
+    localStorage.setItem('refresh_token', res.refreshToken)
   }
 
   async function fetchUser() {

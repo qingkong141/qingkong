@@ -25,13 +25,13 @@ export const authApi = {
   refresh(refreshToken: string) {
     return apiClient.post<never, Pick<TokenResponse, 'accessToken' | 'tokenType'>>(
       '/auth/refresh',
-      { refresh_token: refreshToken },
+      { refreshToken },
     )
   },
 
   // 注销
   logout(refreshToken: string) {
-    return apiClient.post('/auth/logout', { refresh_token: refreshToken })
+    return apiClient.post('/auth/logout', { refreshToken })
   },
 
   // 当前用户信息

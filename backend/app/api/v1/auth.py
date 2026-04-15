@@ -3,14 +3,13 @@ import io
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
-
+from app.schemas.base import BaseSchema
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.minio import minio_client
 from app.core.config import settings
 from app.models.user import User
-from app.schemas.auth import RegisterRequest, LoginRequest, TokenResponse
+from app.schemas.auth import RegisterRequest, LoginRequest, TokenResponse, UserMeResponse
 from app.schemas.user import ChangePasswordRequest
 from app.services import auth as auth_service
 
@@ -19,8 +18,8 @@ from app.services import auth as auth_service
 router = APIRouter(prefix="/auth", tags=["认证"])
 
 
-class RefreshRequest(BaseModel):
-    refresh_token: str
+class RefreshRequest(BaseSchema):
+    refresh_token: str  # 接收 refreshToken 或 refresh_token 均可
 
 
 @router.post("/register", status_code=201)
@@ -30,6 +29,7 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
         return {"id": user.id, "username": user.username, "email": user.email}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -53,15 +53,14 @@ async def logout(data: RefreshRequest):
     await auth_service.logout(data.refresh_token)
 
 
-@router.get("/me")
+@router.get("/me", response_model=UserMeResponse)
 async def me(current_user: User = Depends(get_current_user)):
-    return {
-        "id": current_user.id,
-        "username": current_user.username,
-        "email": current_user.email,
-        # 有头像则返回代理地址，浏览器看不到 MinIO 真实 URL
-        "avatar": f"/qingkong/auth/avatar/{current_user.id}" if current_user.avatar else None,
-    }
+    return UserMeResponse(
+        id=current_user.id,
+        username=current_user.username,
+        email=current_user.email,
+        avatar=f"/qingkong/auth/avatar/{current_user.id}" if current_user.avatar else None,
+    )
 
 
 @router.get("/avatar/{user_id}")

@@ -1,21 +1,26 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import EmailStr
+from app.schemas.base import BaseSchema
 
 
-class RegisterRequest(BaseModel):
-    """注册请求"""
+class RegisterRequest(BaseSchema):
     username: str
     email: EmailStr
     password: str
 
 
-class LoginRequest(BaseModel):
-    """登录请求"""
+class LoginRequest(BaseSchema):
     email: EmailStr
     password: str
 
 
-class TokenResponse(BaseModel):
-    """登录成功返回的 Token"""
+class TokenResponse(BaseSchema):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+
+
+class UserMeResponse(BaseSchema):
+    id: int
+    username: str
+    email: str
+    avatar: str | None

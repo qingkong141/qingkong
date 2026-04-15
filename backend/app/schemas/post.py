@@ -1,40 +1,34 @@
 from datetime import datetime
-from pydantic import BaseModel, field_validator
+from pydantic import field_validator
+from app.schemas.base import BaseSchema
 
 
-# ── 嵌套对象（用于 response 里的关联数据）──
-
-class AuthorBrief(BaseModel):
+class AuthorBrief(BaseSchema):
     id: int
     username: str
     avatar: str | None
-    model_config = {"from_attributes": True}
 
 
-class CategoryBrief(BaseModel):
+class CategoryBrief(BaseSchema):
     id: int
     name: str
     slug: str
-    model_config = {"from_attributes": True}
 
 
-class TagBrief(BaseModel):
+class TagBrief(BaseSchema):
     id: int
     name: str
     slug: str
     color: str | None
-    model_config = {"from_attributes": True}
 
 
-# ── 创建文章 ──
-
-class CreatePostRequest(BaseModel):
+class CreatePostRequest(BaseSchema):
     title: str
     content: str | None = None
     summary: str | None = None
-    cover_image: str | None = None
-    category_id: int | None = None
-    tag_ids: list[int] = []
+    cover_image: str | None = None   # → coverImage
+    category_id: int | None = None   # → categoryId
+    tag_ids: list[int] = []          # → tagIds
     status: str = "draft"
 
     @field_validator("status")
@@ -45,9 +39,7 @@ class CreatePostRequest(BaseModel):
         return v
 
 
-# ── 更新文章（所有字段可选）──
-
-class UpdatePostRequest(BaseModel):
+class UpdatePostRequest(BaseSchema):
     title: str | None = None
     content: str | None = None
     summary: str | None = None
@@ -64,23 +56,19 @@ class UpdatePostRequest(BaseModel):
         return v
 
 
-# ── 响应 ──
-
-class PostResponse(BaseModel):
+class PostResponse(BaseSchema):
     id: int
     title: str
     slug: str
     content: str | None
     summary: str | None
-    cover_image: str | None
+    cover_image: str | None          # → coverImage
     status: str
-    view_count: int
-    like_count: int
-    created_at: datetime
-    updated_at: datetime
-    published_at: datetime | None
+    view_count: int                  # → viewCount
+    like_count: int                  # → likeCount
+    created_at: datetime             # → createdAt
+    updated_at: datetime             # → updatedAt
+    published_at: datetime | None    # → publishedAt
     author: AuthorBrief
     category: CategoryBrief | None
     tags: list[TagBrief]
-
-    model_config = {"from_attributes": True}
