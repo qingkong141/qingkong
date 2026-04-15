@@ -12,7 +12,10 @@ const router = createRouter({
       path: '/admin',
       component: () => import('../views/Layout.vue'),
       children: [
-        { path: '', redirect: '/admin/blog' },
+        {
+          path: '',
+          component: () => import('../views/Welcome.vue'),
+        },
       ],
     },
     {
