@@ -494,7 +494,7 @@ const menuItems = microApps.map(app => ({
 .content {
   flex: 1;
   overflow: auto;
-  padding: 24px;
+  padding: 10px;
   background: var(--bg-page);
   transition: background 0.3s;
 }

@@ -17,7 +17,7 @@ export interface CreatePostBody {
   coverImage?: string
   categoryId?: number
   tagIds?: number[]
-  status?: 'draft' | 'published'
+  status?: 'draft' | 'published' | 'archived'
 }
 
 export type UpdatePostBody = Partial<CreatePostBody>
