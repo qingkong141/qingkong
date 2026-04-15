@@ -210,7 +210,7 @@ shares         分享表
 
 ### Phase 3 — 后台主壳（Sessions 11~13）
 
-- [ ] **Session 11**：admin-shell 初始化
+- [x] **Session 11**：admin-shell 初始化
   - Vue 3 + Vite 项目创建
   - qiankun 安装配置
   - 子应用注册表结构设计
