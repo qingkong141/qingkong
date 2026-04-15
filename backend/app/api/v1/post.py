@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.user import User
-from app.schemas.post import CreatePostRequest, UpdatePostRequest, PostResponse
+from app.schemas.post import CreatePostRequest, UpdatePostRequest, PostResponse, PostListResponse, PostListQuery
 from app.services import post as post_service
 
 router = APIRouter(prefix="/posts", tags=["文章"])
@@ -39,6 +39,36 @@ def _format_post(post, current_user_id: int | None = None) -> dict:
             {"id": t.id, "name": t.name, "slug": t.slug, "color": t.color}
             for t in post.tags
         ],
+    }
+
+
+@router.get("", response_model=PostListResponse)
+async def list_posts(
+    page: int = Query(default=1, ge=1),
+    pageSize: int = Query(default=10, ge=1, le=100),
+    status: str | None = Query(default=None),
+    categoryId: int | None = Query(default=None),
+    tagId: int | None = Query(default=None),
+    search: str | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    query = PostListQuery(
+        page=page,
+        page_size=pageSize,
+        status=status,
+        category_id=categoryId,
+        tag_id=tagId,
+        search=search,
+    )
+    result = await post_service.list_posts(query, db)
+
+    # 把每篇文章的作者头像替换成代理地址
+    items = [_format_post(p) for p in result["items"]]
+    return {
+        "items": items,
+        "total": result["total"],
+        "page": result["page"],
+        "page_size": result["page_size"],
     }
 
 

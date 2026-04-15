@@ -4,11 +4,11 @@ import string
 from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
-from app.models.post import Post, Tag
-from app.schemas.post import CreatePostRequest, UpdatePostRequest
+from app.models.post import Post, Tag, post_tags
+from app.schemas.post import CreatePostRequest, UpdatePostRequest, PostListQuery
 
 
 def _generate_slug(title: str) -> str:
@@ -36,6 +36,61 @@ async def _load_post(post_id: int, db: AsyncSession) -> Post | None:
         .where(Post.id == post_id)
     )
     return result.scalar_one_or_none()
+
+
+async def list_posts(query: PostListQuery, db: AsyncSession) -> dict:
+    stmt = (
+        select(Post)
+        .options(
+            selectinload(Post.author),
+            selectinload(Post.category),
+            selectinload(Post.tags),
+        )
+    )
+
+    # ── 筛选条件 ──────────────────────────────────────
+
+    if query.status:
+        stmt = stmt.where(Post.status == query.status)
+
+    if query.category_id:
+        stmt = stmt.where(Post.category_id == query.category_id)
+
+    if query.tag_id:
+        # 通过中间表 post_tags 过滤，避免 relationship 产生额外子查询
+        stmt = stmt.join(post_tags, Post.id == post_tags.c.post_id).where(
+            post_tags.c.tag_id == query.tag_id
+        )
+
+    if query.search:
+        # PostgreSQL 全文搜索（FTS）
+        # to_tsvector('simple', ...) 用 simple 字典，支持中文逐字分词
+        # plainto_tsquery 把搜索词转成查询条件，不需要学 FTS 语法
+        ts_vector = func.to_tsvector(
+            'simple',
+            func.coalesce(Post.title, '') + ' ' + func.coalesce(Post.content, ''),
+        )
+        ts_query = func.plainto_tsquery('simple', query.search)
+        stmt = stmt.where(ts_vector.op('@@')(ts_query))
+
+    # ── 先算总数，再分页 ────────────────────────────────
+    # 把上面所有 where 条件带进去算 count
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    total = await db.scalar(count_stmt)
+
+    # 按创建时间倒序，计算偏移量
+    offset = (query.page - 1) * query.page_size
+    stmt = stmt.order_by(Post.created_at.desc()).offset(offset).limit(query.page_size)
+
+    result = await db.execute(stmt)
+    posts = result.scalars().all()
+
+    return {
+        "items": posts,
+        "total": total,
+        "page": query.page,
+        "page_size": query.page_size,
+    }
 
 
 async def create_post(data: CreatePostRequest, author_id: int, db: AsyncSession) -> Post:
