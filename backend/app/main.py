@@ -57,7 +57,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router.router, prefix="/qingkong/v1")
+app.include_router(auth_router.router, prefix="/qingkong")
 
 @app.get("/health")
 async def health_check():

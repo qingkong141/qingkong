@@ -144,19 +144,19 @@ shares         分享表
 
 ### Phase 1 — Monorepo + 基础设施（Sessions 1~5）
 
-- [ ] **Session 1**：Monorepo 骨架搭建
+- [x] **Session 1**：Monorepo 骨架搭建
   - pnpm workspaces + Turborepo 配置
   - 建好 `apps/` `packages/` 目录结构
   - 根 `package.json` `pnpm-workspace.yaml` `turbo.json` 配置完成
   - **验收**：`pnpm install` 跑通，`turbo run dev` 不报错
 
-- [ ] **Session 2**：docker-compose 基础设施
+- [x] **Session 2**：docker-compose 基础设施
   - PostgreSQL + Redis + MinIO 三个服务配置
   - 数据卷、网络、健康检查配置
   - MinIO 控制台可访问（:9001）
   - **验收**：`docker compose up` 三个服务全绿
 
-- [ ] **Session 3**：FastAPI 项目初始化
+- [x] **Session 3**：FastAPI 项目初始化
   - 目录结构（api / models / schemas / services / core）
   - SQLAlchemy async 配置
   - pydantic-settings 环境变量管理
