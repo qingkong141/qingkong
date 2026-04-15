@@ -1,2 +1,6 @@
 export { apiClient } from './src/client'
 export { authApi } from './src/auth'
+export { postApi } from './src/post'
+export { categoryApi } from './src/category'
+export { tagApi } from './src/tag'
+export type { PostListParams, CreatePostBody, UpdatePostBody } from './src/post'

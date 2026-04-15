@@ -16,6 +16,12 @@ const router = createRouter({
           path: '',
           component: () => import('../views/Welcome.vue'),
         },
+        // 微应用占位路由：让 Vue Router 认识 /admin/blog/* 和 /admin/drive/*
+        // :any(.*)* 中的 * 让参数可选，同时匹配 /admin/blog 和 /admin/blog/posts 等
+        // 不配置 component，<router-view> 渲染空内容，Layout 保持挂载
+        // qiankun 通过 #micro-container 接管实际渲染
+        { path: 'blog/:any(.*)*', component: { template: '' } },
+        { path: 'drive/:any(.*)*', component: { template: '' } },
       ],
     },
     {

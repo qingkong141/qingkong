@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useThemeStore } from '../stores/theme'
 import { microApps } from '../micro/apps'
+import { setupMicroApps } from '../micro'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -18,7 +19,8 @@ function toggleSidebar() {
 }
 
 onMounted(async () => {
-  await authStore.fetchUser()
+  authStore.fetchUser()
+  setupMicroApps()
 })
 
 async function handleLogout() {
