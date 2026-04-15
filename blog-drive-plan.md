@@ -182,7 +182,7 @@ shares         分享表
   - access_token + refresh_token 双 token 生成
   - **验收**：Postman 测试注册登录成功，返回两个 token
 
-- [ ] **Session 7**：认证完整闭环
+- [x] **Session 7**：认证完整闭环
   - refresh_token 存 Redis + 过期管理
   - Token 刷新接口 + 注销接口
   - `get_current_user` 依赖注入

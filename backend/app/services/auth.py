@@ -79,3 +79,25 @@ async def refresh(refresh_token: str) -> dict:
 async def logout(refresh_token: str) -> None:
     """注销，删除 Redis 中的 refresh_token"""
     await redis_client.delete(f"refresh:{refresh_token}")
+
+
+async def change_password(
+    user: User,
+    old_password: str,
+    new_password: str,
+    db: AsyncSession,
+) -> None:
+    """修改密码"""
+    if not verify_password(old_password, user.password_hash):
+        raise ValueError("原密码错误")
+
+    user.password_hash = hash_password(new_password)
+    await db.commit()
+
+
+async def update_avatar(user: User, avatar_url: str, db: AsyncSession) -> User:
+    """更新头像 URL"""
+    user.avatar = avatar_url
+    await db.commit()
+    await db.refresh(user)
+    return user
