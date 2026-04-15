@@ -55,8 +55,11 @@ async def login(data: LoginRequest, db: AsyncSession) -> dict:
 
 
 async def refresh(refresh_token: str) -> dict:
-    """用 refresh_token 换新的 access_token"""
-    # 先验证 Token 签名和过期时间
+    """
+    用 refresh_token 换新的 access_token，同时轮换 refresh_token。
+    轮换策略：旧 token 立即从 Redis 删除，颁发全新的 refresh_token。
+    效果：每个 refresh_token 只能用一次，第二次调用必然失败，从根源断掉循环。
+    """
     try:
         payload = decode_token(refresh_token)
     except Exception:
@@ -65,13 +68,23 @@ async def refresh(refresh_token: str) -> dict:
     if payload.get("type") != "refresh":
         raise ValueError("Token 类型错误")
 
-    # 再去 Redis 确认是否存在（注销后 Redis 里会删掉）
     user_id = await redis_client.get(f"refresh:{refresh_token}")
     if not user_id:
         raise ValueError("refresh_token 已失效，请重新登录")
 
+    # 旧 token 立即作废
+    await redis_client.delete(f"refresh:{refresh_token}")
+
+    # 颁发新的双 token
+    new_access = create_access_token(int(user_id))
+    new_refresh = create_refresh_token(int(user_id))
+
+    expire_seconds = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    await redis_client.setex(f"refresh:{new_refresh}", expire_seconds, str(user_id))
+
     return {
-        "access_token": create_access_token(int(user_id)),
+        "access_token": new_access,
+        "refresh_token": new_refresh,
         "token_type": "bearer",
     }
 

@@ -40,7 +40,7 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=401, detail=str(e))
 
 
-@router.post("/refresh")
+@router.post("/refresh", response_model=TokenResponse)
 async def refresh(data: RefreshRequest):
     try:
         return await auth_service.refresh(data.refresh_token)
