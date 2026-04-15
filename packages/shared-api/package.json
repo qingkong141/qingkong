@@ -1,0 +1,12 @@
+{
+    "name": "@qingkong/shared-api",
+    "version": "0.0.1",
+    "main": "index.ts",
+    "types": "index.ts",
+    "scripts": {},
+    "dependencies": {
+      "@qingkong/shared-types": "workspace:*",
+      "axios": "^1.7.0"
+    }
+  }
+  

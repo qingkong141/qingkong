@@ -201,7 +201,7 @@ shares         分享表
 
 > 包名前缀统一使用 `@qingkong/`，如：`@qingkong/shared-types` `@qingkong/shared-api` `@qingkong/shared-ui`
 
-- [ ] **Session 10**：shared-api 包
+- [x] **Session 10**：shared-api 包
   - axios 实例（请求拦截自动带 Token，响应拦截统一错误处理）
   - 封装认证相关 API 函数
   - **验收**：shared-api 可在 app 中调用登录接口
