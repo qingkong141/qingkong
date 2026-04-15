@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 
-const BASE_URL = 'http://127.0.0.1:8000/qingkong/v1'
+const BASE_URL = '/qingkong'
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -31,7 +31,7 @@ apiClient.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token')
       if (refreshToken) {
         try {
-          const res = await axios.post(`${BASE_URL}/auth/refresh`, {
+          const res = await axios.post(`/qingkong/auth/refresh`, {
             refresh_token: refreshToken,
           })
           const newToken = res.data.access_token
