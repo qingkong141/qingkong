@@ -6,6 +6,8 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.api.v1 import auth as auth_router
 from app.api.v1 import post as post_router
+from app.api.v1 import category as category_router
+from app.api.v1 import tag as tag_router
 
 app = FastAPI(
     title="QingKong API",
@@ -65,6 +67,8 @@ app.add_middleware(
 
 app.include_router(auth_router.router, prefix="/qingkong")
 app.include_router(post_router.router, prefix="/qingkong")
+app.include_router(category_router.router, prefix="/qingkong")
+app.include_router(tag_router.router, prefix="/qingkong")
 
 @app.get("/health")
 async def health_check():

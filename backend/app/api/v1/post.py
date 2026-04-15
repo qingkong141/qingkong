@@ -45,19 +45,19 @@ def _format_post(post, current_user_id: int | None = None) -> dict:
 @router.get("", response_model=PostListResponse)
 async def list_posts(
     page: int = Query(default=1, ge=1),
-    pageSize: int = Query(default=10, ge=1, le=100),
+    page_size: int = Query(default=10, ge=1, le=100, alias="pageSize"),
     status: str | None = Query(default=None),
-    categoryId: int | None = Query(default=None),
-    tagId: int | None = Query(default=None),
+    category_id: int | None = Query(default=None, alias="categoryId"),
+    tag_id: int | None = Query(default=None, alias="tagId"),
     search: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
 ):
     query = PostListQuery(
         page=page,
-        page_size=pageSize,
+        page_size=page_size,
         status=status,
-        category_id=categoryId,
-        tag_id=tagId,
+        category_id=category_id,
+        tag_id=tag_id,
         search=search,
     )
     result = await post_service.list_posts(query, db)
