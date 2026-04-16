@@ -25,4 +25,8 @@ export const routes: RouteRecordRaw[] = [
     path: '/tags',
     component: () => import('../views/TagList.vue'),
   },
+  {
+    path: '/comments',
+    component: () => import('../views/CommentList.vue'),
+  },
 ]

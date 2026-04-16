@@ -45,6 +45,7 @@ const menuItems: MenuItem[] = [
       { label: '文章管理', path: '/admin/blog/posts' },
       { label: '分类管理', path: '/admin/blog/categories' },
       { label: '标签管理', path: '/admin/blog/tags' },
+      { label: '评论管理', path: '/admin/blog/comments' },
     ],
   },
   {
