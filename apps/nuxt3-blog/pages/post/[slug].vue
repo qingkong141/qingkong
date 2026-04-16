@@ -202,7 +202,7 @@ function formatDate(str: string) {
 }
 
 .article-content :deep(pre.hljs) {
-  background: #f8f8fa;
+  background: var(--color-code-bg);
   border-radius: var(--radius-md, 10px);
   padding: 16px 20px;
   overflow-x: auto;
@@ -218,7 +218,7 @@ function formatDate(str: string) {
 
 .article-content :deep(p code),
 .article-content :deep(li code) {
-  background: #f3f4f6;
+  background: var(--color-tag-bg);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -257,7 +257,7 @@ function formatDate(str: string) {
 }
 
 .article-content :deep(th) {
-  background: #f8f8fa;
+  background: var(--color-code-bg);
   font-weight: 600;
 }
 

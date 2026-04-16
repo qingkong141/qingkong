@@ -198,7 +198,7 @@ function formatDate(str: string) {
   width: 100%;
   height: 100%;
   min-height: 200px;
-  background: linear-gradient(135deg, #e0e7ff, #f0f0ff);
+  background: var(--color-surface);
   display: flex;
   align-items: center;
   justify-content: center;

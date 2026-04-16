@@ -1,5 +1,10 @@
 <script setup lang="ts">
 const route = useRoute()
+const { theme, init: initTheme, toggle: toggleTheme } = useTheme()
+
+onMounted(() => {
+  initTheme()
+})
 
 const navLinks = [
   { label: '首页', path: '/' },
@@ -23,7 +28,6 @@ function isActive(path: string) {
 
 <template>
   <div class="site">
-    <!-- Header -->
     <header class="site-header">
       <div class="container header-inner">
         <NuxtLink to="/" class="logo">
@@ -31,26 +35,36 @@ function isActive(path: string) {
           <span class="logo-text">青空</span>
         </NuxtLink>
 
-        <nav class="desktop-nav">
-          <NuxtLink
-            v-for="link in navLinks"
-            :key="link.path"
-            :to="link.path"
-            class="nav-link"
-            :class="{ active: isActive(link.path) }"
-          >
-            {{ link.label }}
-          </NuxtLink>
-        </nav>
+        <div class="header-right">
+          <nav class="desktop-nav">
+            <NuxtLink
+              v-for="link in navLinks"
+              :key="link.path"
+              :to="link.path"
+              class="nav-link"
+              :class="{ active: isActive(link.path) }"
+            >
+              {{ link.label }}
+            </NuxtLink>
+          </nav>
 
-        <button class="mobile-toggle" @click="mobileMenuOpen = !mobileMenuOpen">
-          <span :class="['hamburger', { open: mobileMenuOpen }]">
-            <span /><span /><span />
-          </span>
-        </button>
+          <button class="theme-toggle" title="切换主题" @click="toggleTheme">
+            <svg v-if="theme === 'light'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+          </button>
+
+          <button class="mobile-toggle" @click="mobileMenuOpen = !mobileMenuOpen">
+            <span :class="['hamburger', { open: mobileMenuOpen }]">
+              <span /><span /><span />
+            </span>
+          </button>
+        </div>
       </div>
 
-      <!-- Mobile menu -->
       <Transition name="slide">
         <div v-if="mobileMenuOpen" class="mobile-nav">
           <NuxtLink
@@ -66,12 +80,10 @@ function isActive(path: string) {
       </Transition>
     </header>
 
-    <!-- Main content -->
     <main class="site-main">
       <slot />
     </main>
 
-    <!-- Footer -->
     <footer class="site-footer">
       <div class="container footer-inner">
         <p class="footer-copy">© {{ new Date().getFullYear() }} 青空 QingKong</p>
@@ -88,12 +100,11 @@ function isActive(path: string) {
   min-height: 100vh;
 }
 
-/* ── Header ─────────────────── */
 .site-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--header-bg);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--color-border-light);
 }
@@ -103,6 +114,12 @@ function isActive(path: string) {
   align-items: center;
   justify-content: space-between;
   height: var(--nav-height);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .logo {
@@ -147,6 +164,23 @@ function isActive(path: string) {
   background: var(--color-accent-light);
 }
 
+/* ── Theme toggle ────────── */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-2);
+  transition: color 0.15s, background 0.15s;
+}
+
+.theme-toggle:hover {
+  color: var(--color-text-1);
+  background: var(--color-accent-light);
+}
+
 /* ── Mobile toggle ─────────── */
 .mobile-toggle {
   display: none;
@@ -171,15 +205,9 @@ function isActive(path: string) {
   transition: transform 0.25s, opacity 0.25s;
 }
 
-.hamburger.open span:nth-child(1) {
-  transform: translateY(7px) rotate(45deg);
-}
-.hamburger.open span:nth-child(2) {
-  opacity: 0;
-}
-.hamburger.open span:nth-child(3) {
-  transform: translateY(-7px) rotate(-45deg);
-}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
 .mobile-nav {
   display: none;
@@ -198,9 +226,7 @@ function isActive(path: string) {
   transition: color 0.15s;
 }
 
-.mobile-link:last-child {
-  border-bottom: none;
-}
+.mobile-link:last-child { border-bottom: none; }
 
 .mobile-link.active {
   color: var(--color-accent);
@@ -210,14 +236,8 @@ function isActive(path: string) {
   transition: max-height 0.3s ease, opacity 0.2s ease;
   overflow: hidden;
 }
-.slide-enter-from, .slide-leave-to {
-  max-height: 0;
-  opacity: 0;
-}
-.slide-enter-to, .slide-leave-from {
-  max-height: 300px;
-  opacity: 1;
-}
+.slide-enter-from, .slide-leave-to { max-height: 0; opacity: 0; }
+.slide-enter-to, .slide-leave-from { max-height: 300px; opacity: 1; }
 
 @media (max-width: 768px) {
   .desktop-nav { display: none; }
@@ -225,7 +245,6 @@ function isActive(path: string) {
   .mobile-nav { display: flex; }
 }
 
-/* ── Main ──────────────────── */
 .site-main {
   flex: 1;
   padding: 40px 0;
@@ -235,7 +254,6 @@ function isActive(path: string) {
   .site-main { padding: 24px 0; }
 }
 
-/* ── Footer ────────────────── */
 .site-footer {
   border-top: 1px solid var(--color-border-light);
   padding: 32px 0;

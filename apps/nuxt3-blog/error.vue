@@ -32,27 +32,28 @@ function handleBack() {
   align-items: center;
   justify-content: center;
   font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  background: var(--color-bg);
 }
 
 .error-code {
   font-size: 72px;
   font-weight: 700;
-  color: #e5e7eb;
+  color: var(--color-border);
   line-height: 1;
 }
 
 .error-desc {
   margin-top: 12px;
   font-size: 15px;
-  color: #9ca3af;
+  color: var(--color-text-3);
 }
 
 .error-btn {
   margin-top: 32px;
   padding: 8px 24px;
   font-size: 14px;
-  color: #6b7280;
-  border: 1px solid #e5e7eb;
+  color: var(--color-text-2);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   background: none;
   cursor: pointer;
@@ -60,7 +61,7 @@ function handleBack() {
 }
 
 .error-btn:hover {
-  color: #111827;
-  border-color: #111827;
+  color: var(--color-text-1);
+  border-color: var(--color-text-1);
 }
 </style>
