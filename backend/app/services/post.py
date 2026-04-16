@@ -105,9 +105,9 @@ async def create_post(data: CreatePostRequest, author_id: int, db: AsyncSession)
         status=data.status,
     )
 
-    # 创建时直接发布：记录发布时间
+    # 创建时直接发布：记录发布时间（列为 TIMESTAMP WITHOUT TIME ZONE，用 naive UTC）
     if data.status == "published":
-        post.published_at = datetime.now(timezone.utc)
+        post.published_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     # 关联标签
     if data.tag_ids:
@@ -150,7 +150,7 @@ async def update_post(post_id: int, data: UpdatePostRequest, author_id: int, db:
     if data.status is not None and data.status != post.status:
         post.status = data.status
         if data.status == "published" and post.published_at is None:
-            post.published_at = datetime.now(timezone.utc)
+            post.published_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     # 更新标签关联
     if data.tag_ids is not None:
