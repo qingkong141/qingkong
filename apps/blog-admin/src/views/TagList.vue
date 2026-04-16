@@ -3,6 +3,9 @@ import { ref, onMounted } from 'vue'
 import { tagApi } from '@qingkong/shared-api'
 import type { Tag } from '@qingkong/shared-types'
 import { showToast } from '../composables/toast'
+import ConfirmModal from '../components/ConfirmModal.vue'
+import LoadingDots from '../components/LoadingDots.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 const tags = ref<Tag[]>([])
 const loading = ref(false)
@@ -106,16 +109,13 @@ async function doDelete() {
     </div>
 
     <div class="card">
-      <!-- 加载 -->
-      <div v-if="loading" class="center-state">
-        <span class="loading-dot"/><span class="loading-dot"/><span class="loading-dot"/>
-      </div>
-
-      <!-- 空 -->
-      <div v-else-if="tags.length === 0" class="center-state empty">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-        <span>暂无标签，<button class="link-btn" @click="openCreate()">立即创建</button></span>
-      </div>
+      <LoadingDots v-if="loading" />
+      <EmptyState v-else-if="tags.length === 0">
+        <template #icon>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        </template>
+        暂无标签，<button class="link-btn" @click="openCreate()">立即创建</button>
+      </EmptyState>
 
       <!-- 标签网格 -->
       <div v-else class="tag-grid">
@@ -191,24 +191,16 @@ async function doDelete() {
       </div>
     </Teleport>
 
-    <!-- 删除确认弹窗 -->
-    <Teleport to="body">
-      <div v-if="deleteTarget" class="modal-mask" @click.self="deleteTarget = null">
-        <div class="modal">
-          <div class="modal-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          </div>
-          <p class="modal-title" style="text-align:center">确认删除</p>
-          <p class="modal-msg">确定删除标签「{{ deleteTarget.name }}」？已关联的文章不会被删除。</p>
-          <div class="modal-actions" style="justify-content:center">
-            <button class="m-btn" @click="deleteTarget = null">取消</button>
-            <button class="m-btn m-btn-danger" :disabled="deleting" @click="doDelete">
-              {{ deleting ? '删除中…' : '确认删除' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <ConfirmModal
+      v-if="deleteTarget"
+      danger
+      title="确认删除"
+      :message="`确定删除标签「${deleteTarget.name}」？已关联的文章不会被删除。`"
+      confirm-text="确认删除"
+      :loading="deleting"
+      @confirm="doDelete"
+      @cancel="deleteTarget = null"
+    />
   </div>
 </template>
 
@@ -266,14 +258,6 @@ async function doDelete() {
   overflow: hidden;
 }
 
-.center-state {
-  text-align: center;
-  padding: 48px 16px;
-  color: var(--text-3, #9ca3af);
-}
-.center-state svg { display: block; margin: 0 auto 10px; }
-.center-state span { font-size: 13px; }
-
 .link-btn {
   background: none;
   border: none;
@@ -283,18 +267,6 @@ async function doDelete() {
   padding: 0;
   text-decoration: underline;
 }
-
-.loading-dot {
-  display: inline-block;
-  width: 6px; height: 6px;
-  margin: 0 3px;
-  border-radius: 50%;
-  background: var(--accent, #6366f1);
-  animation: pulse 1.2s ease-in-out infinite;
-}
-.loading-dot:nth-child(2) { animation-delay: 0.2s; }
-.loading-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes pulse { 0%,80%,100% { opacity: .3; transform: scale(.8); } 40% { opacity: 1; transform: scale(1); } }
 
 /* ── 标签网格 ── */
 .tag-grid {
@@ -379,7 +351,7 @@ async function doDelete() {
   background: rgba(239,68,68,.05);
 }
 
-/* ── 弹窗 ── */
+/* ── 编辑弹窗 ── */
 .modal-mask {
   position: fixed;
   inset: 0;
@@ -399,9 +371,7 @@ async function doDelete() {
   box-shadow: 0 20px 60px rgba(0,0,0,.18);
 }
 
-.modal-icon { text-align: center; margin-bottom: 10px; }
 .modal-title { font-size: 15px; font-weight: 700; color: var(--text-1, #111); margin: 0 0 16px; }
-.modal-msg { font-size: 13px; color: var(--text-2, #6b7280); margin: 0 0 20px; line-height: 1.6; text-align: center; }
 
 .form-group { margin-bottom: 14px; }
 
@@ -421,14 +391,17 @@ async function doDelete() {
   padding: 0 10px;
   border: 1px solid var(--border, #e5e7eb);
   border-radius: 7px;
-  background: var(--bg-page, #f5f5f7);
+  background: var(--bg-surface, #fff);
   color: var(--text-1, #111);
   font-size: 13px;
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.form-input:focus { border-color: var(--accent, #6366f1); }
+.form-input:focus {
+  border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
 
 /* 颜色选择器 */
 .color-picker {
@@ -531,8 +504,4 @@ async function doDelete() {
 }
 .m-btn-primary:hover { opacity: .9; }
 .m-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
-
-.m-btn-danger { background: #ef4444; color: #fff; border-color: #ef4444; }
-.m-btn-danger:hover { opacity: .9; }
-.m-btn-danger:disabled { opacity: .5; cursor: not-allowed; }
 </style>

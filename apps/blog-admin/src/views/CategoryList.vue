@@ -3,6 +3,9 @@ import { ref, computed, onMounted } from 'vue'
 import { categoryApi } from '@qingkong/shared-api'
 import type { Category } from '@qingkong/shared-types'
 import { showToast } from '../composables/toast'
+import ConfirmModal from '../components/ConfirmModal.vue'
+import LoadingDots from '../components/LoadingDots.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 const tree = ref<Category[]>([])
 const loading = ref(false)
@@ -164,14 +167,16 @@ const parentOptions = computed(() => flattenForSelect(tree.value, 0, editing.val
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="5" class="td-center">
-              <span class="loading-dot"/><span class="loading-dot"/><span class="loading-dot"/>
-            </td>
+            <td colspan="5"><LoadingDots /></td>
           </tr>
           <tr v-else-if="tree.length === 0">
-            <td colspan="5" class="td-empty">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-              <span>暂无分类，<button class="link-btn" @click="openCreate()">立即创建</button></span>
+            <td colspan="5">
+              <EmptyState>
+                <template #icon>
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                </template>
+                暂无分类，<button class="link-btn" @click="openCreate()">立即创建</button>
+              </EmptyState>
             </td>
           </tr>
           <tr
@@ -258,24 +263,16 @@ const parentOptions = computed(() => flattenForSelect(tree.value, 0, editing.val
       </div>
     </Teleport>
 
-    <!-- 删除确认弹窗 -->
-    <Teleport to="body">
-      <div v-if="deleteTarget" class="modal-mask" @click.self="deleteTarget = null">
-        <div class="modal">
-          <div class="modal-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          </div>
-          <p class="modal-title">确认删除</p>
-          <p class="modal-msg">确定删除分类「{{ deleteTarget.name }}」？其下的子分类也将被删除。</p>
-          <div class="modal-actions">
-            <button class="m-btn" @click="deleteTarget = null">取消</button>
-            <button class="m-btn m-btn-danger" :disabled="deleting" @click="doDelete">
-              {{ deleting ? '删除中…' : '确认删除' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <ConfirmModal
+      v-if="deleteTarget"
+      danger
+      title="确认删除"
+      :message="`确定删除分类「${deleteTarget.name}」？其下的子分类也将被删除。`"
+      confirm-text="确认删除"
+      :loading="deleting"
+      @confirm="doDelete"
+      @cancel="deleteTarget = null"
+    />
   </div>
 </template>
 
@@ -407,28 +404,6 @@ const parentOptions = computed(() => flattenForSelect(tree.value, 0, editing.val
   white-space: nowrap;
 }
 
-.td-center { text-align: center; padding: 32px !important; }
-
-.loading-dot {
-  display: inline-block;
-  width: 6px; height: 6px;
-  margin: 0 3px;
-  border-radius: 50%;
-  background: var(--accent, #6366f1);
-  animation: pulse 1.2s ease-in-out infinite;
-}
-.loading-dot:nth-child(2) { animation-delay: 0.2s; }
-.loading-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes pulse { 0%,80%,100% { opacity: .3; transform: scale(.8); } 40% { opacity: 1; transform: scale(1); } }
-
-.td-empty {
-  text-align: center;
-  padding: 48px 16px !important;
-  color: var(--text-3, #9ca3af);
-}
-.td-empty svg { display: block; margin: 0 auto 10px; }
-.td-empty span { font-size: 13px; }
-
 .link-btn {
   background: none;
   border: none;
@@ -466,7 +441,7 @@ const parentOptions = computed(() => flattenForSelect(tree.value, 0, editing.val
   background: rgba(239,68,68,.05);
 }
 
-/* ── 弹窗 ── */
+/* ── 编辑弹窗 ── */
 .modal-mask {
   position: fixed;
   inset: 0;
@@ -486,9 +461,7 @@ const parentOptions = computed(() => flattenForSelect(tree.value, 0, editing.val
   box-shadow: 0 20px 60px rgba(0,0,0,.18);
 }
 
-.modal-icon { text-align: center; margin-bottom: 10px; }
 .modal-title { font-size: 15px; font-weight: 700; color: var(--text-1, #111); margin: 0 0 16px; }
-.modal-msg { font-size: 13px; color: var(--text-2, #6b7280); margin: 0 0 20px; line-height: 1.6; text-align: center; }
 
 .form-group { margin-bottom: 14px; }
 
@@ -508,21 +481,24 @@ const parentOptions = computed(() => flattenForSelect(tree.value, 0, editing.val
   padding: 0 10px;
   border: 1px solid var(--border, #e5e7eb);
   border-radius: 7px;
-  background: var(--bg-page, #f5f5f7);
+  background: var(--bg-surface, #fff);
   color: var(--text-1, #111);
   font-size: 13px;
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.form-input:focus { border-color: var(--accent, #6366f1); }
+.form-input:focus {
+  border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
 
 .form-textarea {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--border, #e5e7eb);
   border-radius: 7px;
-  background: var(--bg-page, #f5f5f7);
+  background: var(--bg-surface, #fff);
   color: var(--text-1, #111);
   font-size: 13px;
   outline: none;
@@ -530,9 +506,12 @@ const parentOptions = computed(() => flattenForSelect(tree.value, 0, editing.val
   font-family: inherit;
   line-height: 1.5;
   resize: vertical;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.form-textarea:focus { border-color: var(--accent, #6366f1); }
+.form-textarea:focus {
+  border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
 
 .modal-actions {
   display: flex;
@@ -562,8 +541,4 @@ const parentOptions = computed(() => flattenForSelect(tree.value, 0, editing.val
 }
 .m-btn-primary:hover { opacity: .9; }
 .m-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
-
-.m-btn-danger { background: #ef4444; color: #fff; border-color: #ef4444; }
-.m-btn-danger:hover { opacity: .9; }
-.m-btn-danger:disabled { opacity: .5; cursor: not-allowed; }
 </style>

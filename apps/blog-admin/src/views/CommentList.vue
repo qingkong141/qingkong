@@ -3,6 +3,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { commentApi } from '@qingkong/shared-api'
 import type { CommentWithPost } from '@qingkong/shared-api'
 import { showToast } from '../composables/toast'
+import ConfirmModal from '../components/ConfirmModal.vue'
+import Pagination from '../components/Pagination.vue'
+import LoadingDots from '../components/LoadingDots.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 const comments = ref<CommentWithPost[]>([])
 const total = ref(0)
@@ -121,16 +125,13 @@ const STATUS_CLASS: Record<string, string> = { pending: 'badge-pending', approve
 
       <!-- 列表 -->
       <div class="comment-list">
-        <!-- 加载中 -->
-        <div v-if="loading" class="center-state">
-          <span class="loading-dot"/><span class="loading-dot"/><span class="loading-dot"/>
-        </div>
-
-        <!-- 空 -->
-        <div v-else-if="comments.length === 0" class="center-state empty">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span>暂无评论</span>
-        </div>
+        <LoadingDots v-if="loading" />
+        <EmptyState v-else-if="comments.length === 0">
+          <template #icon>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </template>
+          暂无评论
+        </EmptyState>
 
         <!-- 评论卡片 -->
         <div v-else v-for="c in comments" :key="c.id" class="comment-card">
@@ -169,39 +170,19 @@ const STATUS_CLASS: Record<string, string> = { pending: 'badge-pending', approve
         </div>
       </div>
 
-      <!-- 分页 -->
-      <div v-if="totalPages > 1" class="pagination">
-        <span class="page-info">第 {{ page }} / {{ totalPages }} 页</span>
-        <div class="page-btns">
-          <button class="page-btn" :disabled="page <= 1" @click="page--">‹</button>
-          <button
-            v-for="p in totalPages" :key="p"
-            class="page-btn" :class="{ active: p === page }"
-            @click="page = p"
-          >{{ p }}</button>
-          <button class="page-btn" :disabled="page >= totalPages" @click="page++">›</button>
-        </div>
-      </div>
+      <Pagination :page="page" :total-pages="totalPages" @update:page="page = $event" />
     </div>
 
-    <!-- 删除确认弹窗 -->
-    <Teleport to="body">
-      <div v-if="deleteTarget" class="modal-mask" @click.self="deleteTarget = null">
-        <div class="modal">
-          <div class="modal-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          </div>
-          <p class="modal-title">确认删除</p>
-          <p class="modal-msg">删除此评论后不可恢复。</p>
-          <div class="modal-actions">
-            <button class="m-btn" @click="deleteTarget = null">取消</button>
-            <button class="m-btn m-btn-danger" :disabled="deleting" @click="doDelete">
-              {{ deleting ? '删除中…' : '确认删除' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <ConfirmModal
+      v-if="deleteTarget"
+      danger
+      title="确认删除"
+      message="删除此评论后不可恢复。"
+      confirm-text="确认删除"
+      :loading="deleting"
+      @confirm="doDelete"
+      @cancel="deleteTarget = null"
+    />
   </div>
 </template>
 
@@ -301,26 +282,6 @@ const STATUS_CLASS: Record<string, string> = { pending: 'badge-pending', approve
   display: flex;
   flex-direction: column;
 }
-
-.center-state {
-  text-align: center;
-  padding: 48px 16px;
-  color: var(--text-3, #9ca3af);
-}
-.center-state svg { display: block; margin: 0 auto 10px; }
-.center-state span { font-size: 13px; }
-
-.loading-dot {
-  display: inline-block;
-  width: 6px; height: 6px;
-  margin: 0 3px;
-  border-radius: 50%;
-  background: var(--accent, #6366f1);
-  animation: pulse 1.2s ease-in-out infinite;
-}
-.loading-dot:nth-child(2) { animation-delay: 0.2s; }
-.loading-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes pulse { 0%,80%,100% { opacity: .3; transform: scale(.8); } 40% { opacity: 1; transform: scale(1); } }
 
 /* 评论卡片 */
 .comment-card {
@@ -456,76 +417,4 @@ const STATUS_CLASS: Record<string, string> = { pending: 'badge-pending', approve
   background: rgba(239,68,68,.05);
 }
 
-/* 分页 */
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-top: 1px solid var(--border, #e5e7eb);
-  background: var(--bg-page, #f9fafb);
-}
-
-.page-info { font-size: 12px; color: var(--text-3, #9ca3af); }
-.page-btns { display: flex; gap: 4px; }
-
-.page-btn {
-  min-width: 28px;
-  height: 28px;
-  padding: 0 6px;
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 6px;
-  background: var(--bg-surface, #fff);
-  color: var(--text-2, #6b7280);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.12s;
-}
-.page-btn:hover:not(:disabled) { border-color: var(--accent, #6366f1); color: var(--accent, #6366f1); }
-.page-btn.active { background: var(--accent, #6366f1); border-color: var(--accent, #6366f1); color: #fff; }
-.page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-/* 弹窗 */
-.modal-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  backdrop-filter: blur(2px);
-}
-
-.modal {
-  background: var(--bg-surface, #fff);
-  border-radius: 14px;
-  padding: 28px 24px 22px;
-  width: 340px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.18);
-  text-align: center;
-}
-
-.modal-icon { margin-bottom: 10px; }
-.modal-title { font-size: 15px; font-weight: 700; color: var(--text-1, #111); margin: 0 0 6px; }
-.modal-msg { font-size: 13px; color: var(--text-2, #6b7280); margin: 0 0 20px; line-height: 1.6; }
-
-.modal-actions { display: flex; gap: 8px; justify-content: center; }
-
-.m-btn {
-  flex: 1;
-  height: 34px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid var(--border, #e5e7eb);
-  background: var(--bg-surface, #fff);
-  color: var(--text-1, #111);
-  transition: background 0.12s;
-}
-.m-btn:hover { background: var(--bg-hover, #f3f4f6); }
-.m-btn-danger { background: #ef4444; color: #fff; border-color: #ef4444; }
-.m-btn-danger:hover { opacity: .9; }
-.m-btn-danger:disabled { opacity: .5; cursor: not-allowed; }
 </style>

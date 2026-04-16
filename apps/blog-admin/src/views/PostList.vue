@@ -3,6 +3,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { postApi, categoryApi } from '@qingkong/shared-api'
 import type { Post, Category } from '@qingkong/shared-types'
+import ConfirmModal from '../components/ConfirmModal.vue'
+import Pagination from '../components/Pagination.vue'
+import LoadingDots from '../components/LoadingDots.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 const router = useRouter()
 
@@ -143,20 +147,12 @@ function formatDate(iso: string) {
           </tr>
         </thead>
         <tbody>
-          <!-- 加载中 -->
           <tr v-if="loading">
-            <td colspan="5" class="td-center">
-              <span class="loading-dot"/>
-              <span class="loading-dot"/>
-              <span class="loading-dot"/>
-            </td>
+            <td colspan="5"><LoadingDots /></td>
           </tr>
-
-          <!-- 空状态 -->
           <tr v-else-if="posts.length === 0">
-            <td colspan="5" class="td-empty">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-              <span>暂无文章，<button class="link-btn" @click="gotoEdit()">立即创建</button></span>
+            <td colspan="5">
+              <EmptyState>暂无文章，<button class="link-btn" @click="gotoEdit()">立即创建</button></EmptyState>
             </td>
           </tr>
 
@@ -186,40 +182,20 @@ function formatDate(iso: string) {
         </tbody>
       </table>
 
-      <!-- 分页 -->
-      <div v-if="totalPages > 1" class="pagination">
-        <span class="page-info">第 {{ page }} / {{ totalPages }} 页</span>
-        <div class="page-btns">
-          <button class="page-btn" :disabled="page <= 1" @click="page--">‹</button>
-          <button
-            v-for="p in totalPages" :key="p"
-            class="page-btn" :class="{ active: p === page }"
-            @click="page = p"
-          >{{ p }}</button>
-          <button class="page-btn" :disabled="page >= totalPages" @click="page++">›</button>
-        </div>
-      </div>
+      <Pagination :page="page" :total-pages="totalPages" @update:page="page = $event" />
 
     </div><!-- /card -->
 
-    <!-- 删除确认弹窗 -->
-    <Teleport to="body">
-      <div v-if="deleteTarget" class="modal-mask" @click.self="deleteTarget = null">
-        <div class="modal">
-          <div class="modal-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          </div>
-          <p class="modal-title">确认删除</p>
-          <p class="modal-msg">「{{ deleteTarget.title }}」删除后不可恢复。</p>
-          <div class="modal-actions">
-            <button class="m-btn" @click="deleteTarget = null">取消</button>
-            <button class="m-btn m-btn-danger" :disabled="deleting" @click="doDelete">
-              {{ deleting ? '删除中…' : '确认删除' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <ConfirmModal
+      v-if="deleteTarget"
+      danger
+      title="确认删除"
+      :message="`「${deleteTarget.title}」删除后不可恢复。`"
+      confirm-text="确认删除"
+      :loading="deleting"
+      @confirm="doDelete"
+      @cancel="deleteTarget = null"
+    />
 
   </div>
 </template>
@@ -378,32 +354,6 @@ function formatDate(iso: string) {
 
 .td-meta { color: var(--text-2, #6b7280); }
 
-/* 加载动画 */
-.td-center { text-align: center; padding: 32px !important; }
-
-.loading-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin: 0 3px;
-  border-radius: 50%;
-  background: var(--accent, #6366f1);
-  animation: pulse 1.2s ease-in-out infinite;
-}
-.loading-dot:nth-child(2) { animation-delay: 0.2s; }
-.loading-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes pulse { 0%,80%,100% { opacity: .3; transform: scale(.8); } 40% { opacity: 1; transform: scale(1); } }
-
-/* 空状态 */
-.td-empty {
-  text-align: center;
-  padding: 48px 16px !important;
-  color: var(--text-3, #9ca3af);
-}
-.td-empty { display: table-cell; }
-.td-empty svg { display: block; margin: 0 auto 10px; }
-.td-empty span { font-size: 13px; }
-
 .link-btn {
   background: none;
   border: none;
@@ -455,77 +405,4 @@ function formatDate(iso: string) {
   background: rgba(239,68,68,.05);
 }
 
-/* ── 分页 ── */
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-top: 1px solid var(--border, #e5e7eb);
-  background: var(--bg-page, #f9fafb);
-}
-
-.page-info { font-size: 12px; color: var(--text-3, #9ca3af); }
-
-.page-btns { display: flex; gap: 4px; }
-
-.page-btn {
-  min-width: 28px;
-  height: 28px;
-  padding: 0 6px;
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 6px;
-  background: var(--bg-surface, #fff);
-  color: var(--text-2, #6b7280);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.12s;
-}
-.page-btn:hover:not(:disabled) { border-color: var(--accent, #6366f1); color: var(--accent, #6366f1); }
-.page-btn.active { background: var(--accent, #6366f1); border-color: var(--accent, #6366f1); color: #fff; }
-.page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-/* ── 删除确认 ── */
-.modal-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  backdrop-filter: blur(2px);
-}
-
-.modal {
-  background: var(--bg-surface, #fff);
-  border-radius: 14px;
-  padding: 28px 24px 22px;
-  width: 340px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.18);
-  text-align: center;
-}
-
-.modal-icon { margin-bottom: 10px; }
-.modal-title { font-size: 15px; font-weight: 700; color: var(--text-1, #111); margin: 0 0 6px; }
-.modal-msg { font-size: 13px; color: var(--text-2, #6b7280); margin: 0 0 20px; line-height: 1.6; }
-
-.modal-actions { display: flex; gap: 8px; justify-content: center; }
-
-.m-btn {
-  flex: 1;
-  height: 34px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid var(--border, #e5e7eb);
-  background: var(--bg-surface, #fff);
-  color: var(--text-1, #111);
-  transition: background 0.12s;
-}
-.m-btn:hover { background: var(--bg-hover, #f3f4f6); }
-.m-btn-danger { background: #ef4444; color: #fff; border-color: #ef4444; }
-.m-btn-danger:hover { opacity: .9; }
-.m-btn-danger:disabled { opacity: .5; cursor: not-allowed; }
 </style>
