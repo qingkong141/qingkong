@@ -53,11 +53,16 @@ def delete_from_minio(key: str):
         pass
 
 
-def get_presigned_url(key: str, expires_seconds: int = 600) -> str:
+def get_presigned_url(key: str, expires_seconds: int = 600, filename: str | None = None) -> str:
     from datetime import timedelta
+    from urllib.parse import quote
     client = get_minio_client()
+    headers = {}
+    if filename:
+        headers["response-content-disposition"] = f"attachment; filename*=UTF-8''{quote(filename)}"
     return client.presigned_get_object(
         settings.MINIO_BUCKET,
         key,
         expires=timedelta(seconds=expires_seconds),
+        response_headers=headers if headers else None,
     )

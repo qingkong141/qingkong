@@ -104,5 +104,5 @@ async def download_shared_file(
     await db.commit()
 
     from app.core.storage import get_presigned_url
-    url = get_presigned_url(share.file.storage_key)
+    url = get_presigned_url(share.file.storage_key, filename=share.file.name)
     return share, url
