@@ -39,5 +39,7 @@ class Share(Base):
     password: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="提取密码，为空则无需密码")
     expire_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="过期时间，为空则永不过期")
     download_count: Mapped[int] = mapped_column(Integer, default=0, comment="下载次数统计")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), comment="创建时间")
 
     file: Mapped["File"] = relationship(back_populates="shares")
+    owner: Mapped["User"] = relationship()
