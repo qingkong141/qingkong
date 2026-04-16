@@ -14,8 +14,26 @@ if (!post.value) {
   throw createError({ statusCode: 404, message: '文章不存在' })
 }
 
+const pageTitle = post.value.title + ' - 青空'
+const pageDesc = post.value.summary || post.value.title
+const pageUrl = `https://qingkong.dev/post/${post.value.slug}`
+const pageImage = post.value.coverImage || ''
+
 useHead({
-  title: post.value.title + ' - 青空',
+  title: pageTitle,
+  meta: [
+    { name: 'description', content: pageDesc },
+    { property: 'og:title', content: pageTitle },
+    { property: 'og:description', content: pageDesc },
+    { property: 'og:type', content: 'article' },
+    { property: 'og:url', content: pageUrl },
+    ...(pageImage ? [{ property: 'og:image', content: pageImage }] : []),
+    { property: 'article:published_time', content: post.value.publishedAt || post.value.createdAt },
+    { name: 'twitter:card', content: pageImage ? 'summary_large_image' : 'summary' },
+    { name: 'twitter:title', content: pageTitle },
+    { name: 'twitter:description', content: pageDesc },
+    ...(pageImage ? [{ name: 'twitter:image', content: pageImage }] : []),
+  ],
 })
 
 const { html: renderedContent, toc } = useMarkdown(post.value.content || '')

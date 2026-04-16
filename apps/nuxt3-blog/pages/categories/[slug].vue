@@ -12,7 +12,14 @@ if (!category.value) {
   throw createError({ statusCode: 404, message: '分类不存在' })
 }
 
-useHead({ title: `${category.value.name} - 青空` })
+useHead({
+  title: `${category.value.name} - 青空`,
+  meta: [
+    { name: 'description', content: category.value.description || `${category.value.name} 分类下的文章` },
+    { property: 'og:title', content: `${category.value.name} - 青空` },
+    { property: 'og:description', content: category.value.description || `${category.value.name} 分类下的文章` },
+  ],
+})
 
 const currentPage = computed(() => Number(route.query.page) || 1)
 const pageSize = 10
@@ -187,5 +194,10 @@ function formatDate(str: string) {
 .page-info {
   font-size: 14px;
   color: var(--color-text-3);
+}
+
+@media (max-width: 640px) {
+  .post-link { flex-direction: column; gap: 2px; }
+  .post-date { width: auto; }
 }
 </style>

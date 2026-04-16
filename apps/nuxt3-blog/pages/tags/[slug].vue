@@ -12,7 +12,13 @@ if (!tag.value) {
   throw createError({ statusCode: 404, message: '标签不存在' })
 }
 
-useHead({ title: `${tag.value.name} - 青空` })
+useHead({
+  title: `${tag.value.name} - 青空`,
+  meta: [
+    { name: 'description', content: `标签「${tag.value.name}」下的文章` },
+    { property: 'og:title', content: `${tag.value.name} - 青空` },
+  ],
+})
 
 const currentPage = computed(() => Number(route.query.page) || 1)
 const pageSize = 10
@@ -197,5 +203,10 @@ function formatDate(str: string) {
 .page-info {
   font-size: 14px;
   color: var(--color-text-3);
+}
+
+@media (max-width: 640px) {
+  .post-link { flex-direction: column; gap: 2px; }
+  .post-date { width: auto; }
 }
 </style>

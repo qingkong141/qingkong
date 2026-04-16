@@ -162,4 +162,9 @@ function formatDate(str: string) {
   font-size: 14px;
   color: var(--color-text-3);
 }
+
+@media (max-width: 640px) {
+  .archive-link { flex-direction: column; gap: 2px; }
+  .archive-date { width: auto; }
+}
 </style>
