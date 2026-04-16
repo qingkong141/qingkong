@@ -174,3 +174,16 @@ async def delete_post(post_id: int, author_id: int, db: AsyncSession) -> bool:
 
 async def get_post(post_id: int, db: AsyncSession) -> Post | None:
     return await _load_post(post_id, db)
+
+
+async def get_post_by_slug(slug: str, db: AsyncSession) -> Post | None:
+    result = await db.execute(
+        select(Post)
+        .options(
+            selectinload(Post.author),
+            selectinload(Post.category),
+            selectinload(Post.tags),
+        )
+        .where(Post.slug == slug)
+    )
+    return result.scalar_one_or_none()

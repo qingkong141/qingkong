@@ -1,4 +1,4 @@
-# 晴空 QingKong — 博客 + 云盘系统开发计划
+# 青空 QingKong — 博客 + 云盘系统开发计划
 
 > 利用空闲时间完成，每个「Session」代表一次有效开发时间（约 2~3 小时）
 > 工作日晚上 1 Session，周末 2 Session，总计约 **50 Sessions / 3~4 个月**
@@ -518,5 +518,5 @@ shares         分享表
 ---
 
 *计划生成日期：2026-04-14*
-*项目名称：晴空 QingKong*
+*项目名称：青空 QingKong*
 *Git 仓库：qingkong*

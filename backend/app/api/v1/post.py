@@ -82,6 +82,17 @@ async def create_post(
     return _format_post(post)
 
 
+@router.get("/slug/{slug}", response_model=PostResponse)
+async def get_post_by_slug(
+    slug: str,
+    db: AsyncSession = Depends(get_db),
+):
+    post = await post_service.get_post_by_slug(slug, db)
+    if not post:
+        raise HTTPException(status_code=404, detail="文章不存在")
+    return _format_post(post)
+
+
 @router.get("/{post_id}", response_model=PostResponse)
 async def get_post(
     post_id: int,

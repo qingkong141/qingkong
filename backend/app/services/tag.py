@@ -21,6 +21,11 @@ async def list_tags(db: AsyncSession) -> list[Tag]:
     return result.scalars().all()
 
 
+async def get_by_slug(slug: str, db: AsyncSession) -> Tag | None:
+    result = await db.execute(select(Tag).where(Tag.slug == slug))
+    return result.scalar_one_or_none()
+
+
 async def create_tag(data: CreateTagRequest, db: AsyncSession) -> Tag:
     # 名称唯一检查
     existing = await db.execute(select(Tag).where(Tag.name == data.name))

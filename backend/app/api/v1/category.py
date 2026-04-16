@@ -16,6 +16,17 @@ async def get_categories(db: AsyncSession = Depends(get_db)):
     return await category_service.get_tree(db)
 
 
+@router.get("/slug/{slug}")
+async def get_category_by_slug(
+    slug: str,
+    db: AsyncSession = Depends(get_db),
+):
+    category = await category_service.get_by_slug(slug, db)
+    if not category:
+        raise HTTPException(status_code=404, detail="分类不存在")
+    return {"id": category.id, "name": category.name, "slug": category.slug, "description": category.description}
+
+
 @router.post("", status_code=201)
 async def create_category(
     data: CreateCategoryRequest,

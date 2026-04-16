@@ -15,6 +15,17 @@ async def list_tags(db: AsyncSession = Depends(get_db)):
     return await tag_service.list_tags(db)
 
 
+@router.get("/slug/{slug}", response_model=TagResponse)
+async def get_tag_by_slug(
+    slug: str,
+    db: AsyncSession = Depends(get_db),
+):
+    tag = await tag_service.get_by_slug(slug, db)
+    if not tag:
+        raise HTTPException(status_code=404, detail="标签不存在")
+    return tag
+
+
 @router.post("", response_model=TagResponse, status_code=201)
 async def create_tag(
     data: CreateTagRequest,

@@ -48,6 +48,11 @@ async def get_tree(db: AsyncSession) -> list[dict]:
     return roots
 
 
+async def get_by_slug(slug: str, db: AsyncSession) -> Category | None:
+    result = await db.execute(select(Category).where(Category.slug == slug))
+    return result.scalar_one_or_none()
+
+
 async def create_category(data: CreateCategoryRequest, db: AsyncSession) -> Category:
     # 检查父分类是否存在
     if data.parent_id:
