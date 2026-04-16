@@ -9,7 +9,7 @@ export const microApps: RegistrableApp<Record<string, unknown>>[] = [
   },
   {
     name: 'drive',
-    entry: '//127.0.0.1:3002',
+    entry: '//localhost:3002',
     container: '#micro-container',
     activeRule: '/admin/drive',
   },

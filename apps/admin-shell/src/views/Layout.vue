@@ -53,6 +53,11 @@ const menuItems: MenuItem[] = [
     label: '云盘',
     path: '/admin/drive',
     icon: '◈',
+    children: [
+      { label: '全部文件', path: '/admin/drive' },
+      { label: '我的分享', path: '/admin/drive/shares' },
+      { label: '回收站', path: '/admin/drive/trash' },
+    ],
   },
 ]
 

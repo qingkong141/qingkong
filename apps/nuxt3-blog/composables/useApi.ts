@@ -13,7 +13,15 @@ export function useApi() {
     })
   }
 
-  return { $get }
+  async function $post<T>(url: string, body?: unknown): Promise<T> {
+    return await $fetch<T>(url, {
+      baseURL,
+      method: 'POST',
+      body,
+    })
+  }
+
+  return { $get, $post }
 }
 
 export interface AuthorBrief {

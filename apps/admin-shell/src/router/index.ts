@@ -25,6 +25,11 @@ const router = createRouter({
       ],
     },
     {
+      path: '/s/:token',
+      component: () => import('../views/ShareAccess.vue'),
+      meta: { public: true },
+    },
+    {
       path: '/',
       redirect: '/admin',
     },

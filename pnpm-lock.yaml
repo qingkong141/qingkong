@@ -86,7 +86,39 @@ importers:
         specifier: ^2.0.0
         version: 2.2.12(typescript@5.9.3)
 
-  apps/drive: {}
+  apps/drive:
+    dependencies:
+      '@qingkong/shared-api':
+        specifier: workspace:*
+        version: link:../../packages/shared-api
+      '@qingkong/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+      pinia:
+        specifier: ^2.1.0
+        version: 2.3.1(typescript@5.9.3)(vue@3.5.32(typescript@5.9.3))
+      vite-plugin-qiankun:
+        specifier: ^1.0.14
+        version: 1.0.15(typescript@5.9.3)(vite@5.4.21(terser@5.46.1))
+      vue:
+        specifier: ^3.4.0
+        version: 3.5.32(typescript@5.9.3)
+      vue-router:
+        specifier: ^4.3.0
+        version: 4.6.4(vue@3.5.32(typescript@5.9.3))
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: ^5.0.0
+        version: 5.2.4(vite@5.4.21(terser@5.46.1))(vue@3.5.32(typescript@5.9.3))
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+      vite:
+        specifier: ^5.2.0
+        version: 5.4.21(terser@5.46.1)
+      vue-tsc:
+        specifier: ^2.0.0
+        version: 2.2.12(typescript@5.9.3)
 
   apps/nuxt3-blog:
     dependencies:
