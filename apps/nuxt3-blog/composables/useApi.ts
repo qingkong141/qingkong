@@ -1,6 +1,9 @@
 export function useApi() {
   const config = useRuntimeConfig()
-  const baseURL = config.public.apiBase as string
+  const clientBase = config.public.apiBase as string
+  const baseURL = import.meta.server
+    ? 'http://127.0.0.1:8000/qingkong'
+    : clientBase
 
   async function $get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
     return await $fetch<T>(url, {

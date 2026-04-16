@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import 'highlight.js/styles/github.css'
+import 'katex/dist/katex.min.css'
+
 const route = useRoute()
 const slug = route.params.slug as string
 
@@ -15,6 +18,8 @@ useHead({
   title: post.value.title + ' - 青空',
 })
 
+const { html: renderedContent, toc } = useMarkdown(post.value.content || '')
+
 function formatDate(str: string) {
   const d = new Date(str)
   return d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -23,45 +28,75 @@ function formatDate(str: string) {
 
 <template>
   <div class="container">
-    <article v-if="post" class="article">
-      <header class="article-header">
-        <div class="article-meta">
-          <time>{{ formatDate(post.createdAt) }}</time>
-          <span v-if="post.category" class="article-cat">
-            <NuxtLink :to="`/categories/${post.category.slug}`">{{ post.category.name }}</NuxtLink>
-          </span>
+    <ReadingProgress />
+
+    <div class="article-layout" :class="{ 'has-toc': toc.length > 0 }">
+      <article class="article">
+        <header class="article-header">
+          <div class="article-meta">
+            <time>{{ formatDate(post!.createdAt) }}</time>
+            <span v-if="post!.category" class="article-cat">
+              <NuxtLink :to="`/categories/${post!.category.slug}`">{{ post!.category.name }}</NuxtLink>
+            </span>
+          </div>
+          <h1 class="article-title">{{ post!.title }}</h1>
+          <div v-if="post!.tags.length" class="article-tags">
+            <NuxtLink
+              v-for="tag in post!.tags"
+              :key="tag.id"
+              :to="`/tags/${tag.slug}`"
+              class="tag"
+              :style="tag.color ? { background: tag.color + '18', color: tag.color } : {}"
+            >
+              {{ tag.name }}
+            </NuxtLink>
+          </div>
+        </header>
+
+        <div v-if="post!.coverImage" class="article-cover">
+          <img :src="post!.coverImage" :alt="post!.title" />
         </div>
-        <h1 class="article-title">{{ post.title }}</h1>
-        <div v-if="post.tags.length" class="article-tags">
-          <NuxtLink
-            v-for="tag in post.tags"
-            :key="tag.id"
-            :to="`/tags/${tag.slug}`"
-            class="tag"
-            :style="tag.color ? { background: tag.color + '18', color: tag.color } : {}"
-          >
-            {{ tag.name }}
-          </NuxtLink>
-        </div>
-      </header>
 
-      <div v-if="post.coverImage" class="article-cover">
-        <img :src="post.coverImage" :alt="post.title" />
-      </div>
+        <div class="article-content" v-html="renderedContent" />
 
-      <div class="article-content" v-html="post.content" />
+        <footer class="article-footer">
+          <NuxtLink to="/" class="back-link">← 返回文章列表</NuxtLink>
+        </footer>
+      </article>
 
-      <footer class="article-footer">
-        <NuxtLink to="/" class="back-link">← 返回文章列表</NuxtLink>
-      </footer>
-    </article>
+      <aside v-if="toc.length > 0" class="article-aside">
+        <TableOfContents :items="toc" />
+      </aside>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.article {
+.article-layout {
   max-width: 720px;
   margin: 0 auto;
+}
+
+.article-layout.has-toc {
+  max-width: 1000px;
+  display: flex;
+  gap: 48px;
+}
+
+.article {
+  flex: 1;
+  min-width: 0;
+  max-width: 720px;
+}
+
+.article-aside {
+  width: 220px;
+  flex-shrink: 0;
+  display: none;
+}
+
+.article-layout.has-toc .article-aside {
+  display: block;
 }
 
 .article-header {
@@ -123,6 +158,7 @@ function formatDate(str: string) {
   width: 100%;
 }
 
+/* ── Article content typography ── */
 .article-content {
   font-size: 16px;
   line-height: 1.8;
@@ -165,7 +201,7 @@ function formatDate(str: string) {
   font-style: italic;
 }
 
-.article-content :deep(pre) {
+.article-content :deep(pre.hljs) {
   background: #f8f8fa;
   border-radius: var(--radius-md, 10px);
   padding: 16px 20px;
@@ -239,6 +275,11 @@ function formatDate(str: string) {
 
 .back-link:hover {
   color: var(--color-text-1);
+}
+
+@media (max-width: 1080px) {
+  .article-aside { display: none !important; }
+  .article-layout.has-toc { max-width: 720px; display: block; }
 }
 
 @media (max-width: 768px) {

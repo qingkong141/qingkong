@@ -10,6 +10,11 @@
   },
   "dependencies": {
     "@qingkong/shared-types": "workspace:*",
+    "@types/markdown-it": "^14.1.2",
+    "highlight.js": "^11.11.1",
+    "katex": "^0.16.45",
+    "markdown-it": "^14.1.1",
+    "markdown-it-katex-gpt": "^1.1.1",
     "nuxt": "^3.15.0",
     "vue": "^3.5.0",
     "vue-router": "^4.5.0"

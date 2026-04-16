@@ -93,6 +93,21 @@ importers:
       '@qingkong/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
+      '@types/markdown-it':
+        specifier: ^14.1.2
+        version: 14.1.2
+      highlight.js:
+        specifier: ^11.11.1
+        version: 11.11.1
+      katex:
+        specifier: ^0.16.45
+        version: 0.16.45
+      markdown-it:
+        specifier: ^14.1.1
+        version: 14.1.1
+      markdown-it-katex-gpt:
+        specifier: ^1.1.1
+        version: 1.1.1
       nuxt:
         specifier: ^3.15.0
         version: 3.21.2(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@parcel/watcher@2.5.6)(@vue/compiler-sfc@3.5.32)(cac@6.7.14)(db0@0.3.4)(ioredis@5.10.1)(magicast@0.5.2)(rollup-plugin-visualizer@7.0.1(rollup@4.60.1))(rollup@4.60.1)(srvx@0.11.15)(terser@5.46.1)(typescript@5.9.3)(vite@7.3.2(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.3))(vue-tsc@2.2.12(typescript@5.9.3))(yaml@2.8.3)
@@ -1992,6 +2007,10 @@ packages:
   commander@2.20.3:
     resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
 
+  commander@8.3.0:
+    resolution: {integrity: sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==}
+    engines: {node: '>= 12'}
+
   commondir@1.0.1:
     resolution: {integrity: sha512-W9pAhw0ja1Edb5GVdIF1mjZw/ASI0AlShXM83UUGe2DVr5TdAPEA1OA8m/g8zWp9x6On7gqufY+FatDbC3MDQg==}
 
@@ -2501,6 +2520,10 @@ packages:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
 
+  highlight.js@11.11.1:
+    resolution: {integrity: sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==}
+    engines: {node: '>=12.0.0'}
+
   hookable@5.5.3:
     resolution: {integrity: sha512-Yc+BQe8SvoXH1643Qez1zqLRmbA5rCL+sSmk6TVos0LWVfNIB7PGncdlId77WzLGSIB5KaWgTaNTs2lNVEI6VQ==}
 
@@ -2656,6 +2679,10 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
+  katex@0.16.45:
+    resolution: {integrity: sha512-pQpZbdBu7wCTmQUh7ufPmLr0pFoObnGUoL/yhtwJDgmmQpbkg/0HSVti25Fu4rmd1oCR6NGWe9vqTWuWv3GcNA==}
+    hasBin: true
+
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
@@ -2732,6 +2759,9 @@ packages:
     engines: {node: '>=12.0.0'}
     peerDependencies:
       markdown-it: '*'
+
+  markdown-it-katex-gpt@1.1.1:
+    resolution: {integrity: sha512-u821NmvPwo4rR/r8yk/BDQ4MqWpm00vzx8HlvmLyyYR1WtAWVWati+ARZNb1w6fX0DxjCkwPEEj30cKLN0pZPA==}
 
   markdown-it-sub@2.0.0:
     resolution: {integrity: sha512-iCBKgwCkfQBRg2vApy9vx1C1Tu6D8XYo8NvevI3OlwzBRmiMtsJ2sXupBgEA7PPxiDwNni3qIUkhZ6j5wofDUA==}
@@ -6062,6 +6092,8 @@ snapshots:
 
   commander@2.20.3: {}
 
+  commander@8.3.0: {}
+
   commondir@1.0.1: {}
 
   compatx@0.2.0: {}
@@ -6573,6 +6605,8 @@ snapshots:
 
   he@1.2.0: {}
 
+  highlight.js@11.11.1: {}
+
   hookable@5.5.3: {}
 
   hookable@6.1.1: {}
@@ -6712,6 +6746,10 @@ snapshots:
 
   json5@2.2.3: {}
 
+  katex@0.16.45:
+    dependencies:
+      commander: 8.3.0
+
   kleur@4.1.5: {}
 
   klona@2.0.6: {}
@@ -6807,6 +6845,10 @@ snapshots:
   markdown-it-image-figures@2.1.1(markdown-it@14.1.1):
     dependencies:
       markdown-it: 14.1.1
+
+  markdown-it-katex-gpt@1.1.1:
+    dependencies:
+      katex: 0.16.45
 
   markdown-it-sub@2.0.0: {}
 

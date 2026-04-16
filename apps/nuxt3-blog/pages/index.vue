@@ -6,7 +6,7 @@ const currentPage = computed(() => Number(route.query.page) || 1)
 const pageSize = 10
 
 const { data, pending } = await useAsyncData(
-  `posts-page-${currentPage.value}`,
+  'posts',
   () => {
     const { list } = usePostApi()
     return list({ page: currentPage.value, pageSize, status: 'published' })
