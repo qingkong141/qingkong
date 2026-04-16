@@ -2,7 +2,6 @@ import type { RouteRecordRaw } from 'vue-router'
 
 export const routes: RouteRecordRaw[] = [
   {
-    // /admin/blog → /admin/blog/posts 默认跳转
     path: '/',
     redirect: '/posts',
   },
@@ -17,5 +16,13 @@ export const routes: RouteRecordRaw[] = [
   {
     path: '/posts/:id/edit',
     component: () => import('../views/PostEdit.vue'),
+  },
+  {
+    path: '/categories',
+    component: () => import('../views/CategoryList.vue'),
+  },
+  {
+    path: '/tags',
+    component: () => import('../views/TagList.vue'),
   },
 ]

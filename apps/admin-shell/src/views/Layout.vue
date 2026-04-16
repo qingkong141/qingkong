@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useThemeStore } from '../stores/theme'
-import { microApps } from '../micro/apps'
 import { setupMicroApps } from '../micro'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
 
-// 侧边栏折叠状态，读取上次记录
 const collapsed = ref(localStorage.getItem('sidebar') === 'collapsed')
 
 function toggleSidebar() {
@@ -28,12 +27,49 @@ async function handleLogout() {
   router.push('/login')
 }
 
-const menuItems = microApps.map(app => ({
-  name: app.name,
-  label: app.name === 'blog-admin' ? '博客管理' : '云盘',
-  path: app.activeRule as string,
-  icon: app.name === 'blog-admin' ? '✦' : '◈',
-}))
+interface MenuItem {
+  name: string
+  label: string
+  path: string
+  icon: string
+  children?: { label: string; path: string }[]
+}
+
+const menuItems: MenuItem[] = [
+  {
+    name: 'blog-admin',
+    label: '博客管理',
+    path: '/admin/blog',
+    icon: '✦',
+    children: [
+      { label: '文章管理', path: '/admin/blog/posts' },
+      { label: '分类管理', path: '/admin/blog/categories' },
+      { label: '标签管理', path: '/admin/blog/tags' },
+    ],
+  },
+  {
+    name: 'drive',
+    label: '云盘',
+    path: '/admin/drive',
+    icon: '◈',
+  },
+]
+
+const expandedMenus = ref<Set<string>>(new Set(['blog-admin']))
+
+function toggleMenu(name: string) {
+  if (expandedMenus.value.has(name)) expandedMenus.value.delete(name)
+  else expandedMenus.value.add(name)
+}
+
+function isChildActive(path: string) {
+  return route.path === path || route.path.startsWith(path + '/')
+}
+
+function isGroupActive(item: MenuItem) {
+  if (!item.children) return route.path.startsWith(item.path)
+  return item.children.some(c => isChildActive(c.path))
+}
 </script>
 
 <template>
@@ -51,17 +87,44 @@ const menuItems = microApps.map(app => ({
       <!-- 菜单 -->
       <nav class="sidebar-nav">
         <p v-if="!collapsed" class="nav-label">功能模块</p>
-        <router-link
-          v-for="item in menuItems"
-          :key="item.name"
-          :to="item.path"
-          class="menu-item"
-          active-class="active"
-          :title="collapsed ? item.label : ''"
-        >
-          <span class="menu-icon">{{ item.icon }}</span>
-          <span v-if="!collapsed" class="menu-label">{{ item.label }}</span>
-        </router-link>
+        <div v-for="item in menuItems" :key="item.name" class="menu-group">
+          <!-- 有子菜单：点击展开/收起 -->
+          <div
+            v-if="item.children"
+            class="menu-item"
+            :class="{ active: isGroupActive(item) && collapsed }"
+            :title="collapsed ? item.label : ''"
+            @click="collapsed ? router.push(item.children[0].path) : toggleMenu(item.name)"
+          >
+            <span class="menu-icon">{{ item.icon }}</span>
+            <span v-if="!collapsed" class="menu-label">{{ item.label }}</span>
+            <svg v-if="!collapsed" class="menu-arrow" :class="{ expanded: expandedMenus.has(item.name) }" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <!-- 子菜单项 -->
+          <div v-if="item.children && !collapsed && expandedMenus.has(item.name)" class="sub-menu">
+            <router-link
+              v-for="child in item.children"
+              :key="child.path"
+              :to="child.path"
+              class="sub-item"
+              :class="{ active: isChildActive(child.path) }"
+            >
+              <span class="sub-dot"/>
+              {{ child.label }}
+            </router-link>
+          </div>
+          <!-- 无子菜单：直接导航 -->
+          <router-link
+            v-if="!item.children"
+            :to="item.path"
+            class="menu-item"
+            :class="{ active: isGroupActive(item) }"
+            :title="collapsed ? item.label : ''"
+          >
+            <span class="menu-icon">{{ item.icon }}</span>
+            <span v-if="!collapsed" class="menu-label">{{ item.label }}</span>
+          </router-link>
+        </div>
       </nav>
     </aside>
 
@@ -443,7 +506,7 @@ const menuItems = microApps.map(app => ({
   white-space: nowrap;
 }
 
-/* 菜单项：小 margin 留边，内部 padding 决定文字位置 */
+/* 菜单项 */
 .menu-item {
   display: flex;
   align-items: center;
@@ -458,6 +521,7 @@ const menuItems = microApps.map(app => ({
   transition: background 0.15s, color 0.15s;
   white-space: nowrap;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .menu-item:hover {
@@ -465,7 +529,6 @@ const menuItems = microApps.map(app => ({
   color: var(--text-1);
 }
 
-/* 选中：实色 accent 背景，文字白色 */
 .menu-item.active {
   background: var(--accent);
   color: #fff;
@@ -478,7 +541,63 @@ const menuItems = microApps.map(app => ({
   flex-shrink: 0;
 }
 
-/* 折叠时：只显示图标，居中对齐 */
+.menu-label { flex: 1; }
+
+.menu-arrow {
+  color: var(--text-3);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.menu-arrow.expanded { transform: rotate(90deg); }
+
+/* 子菜单 */
+.sub-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0 4px;
+}
+
+.sub-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 8px;
+  padding: 8px 12px 8px 22px;
+  border-radius: 6px;
+  color: var(--text-2);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sub-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-1);
+}
+
+.sub-item.active {
+  color: var(--accent);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.sub-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-3);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.sub-item.active .sub-dot {
+  background: var(--accent);
+}
+
+/* 折叠时 */
 .sidebar.collapsed .menu-item {
   justify-content: center;
   margin: 2px 8px;
