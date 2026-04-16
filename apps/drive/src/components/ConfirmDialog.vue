@@ -44,11 +44,11 @@ const { visible, title, message, confirmText, cancelText, isDanger, confirm, can
 }
 .m-btn:hover { background: var(--bg-hover, #f3f4f6); }
 
-.m-btn-primary { background: var(--accent, #6366f1); color: #fff; border-color: var(--accent, #6366f1); }
-.m-btn-primary:hover { opacity: .9; }
+.m-btn.m-btn-primary { background: var(--accent, #6366f1); color: #fff; border-color: var(--accent, #6366f1); }
+.m-btn.m-btn-primary:hover { background: var(--accent, #6366f1); opacity: .9; }
 
-.m-btn-danger { background: #ef4444; color: #fff; border-color: #ef4444; }
-.m-btn-danger:hover { opacity: .9; }
+.m-btn.m-btn-danger { background: #ef4444; color: #fff; border-color: #ef4444; }
+.m-btn.m-btn-danger:hover { background: #ef4444; opacity: .9; }
 
 .fade-enter-active { transition: opacity 0.15s; }
 .fade-leave-active { transition: opacity 0.1s; }

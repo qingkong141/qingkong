@@ -21,6 +21,7 @@ export interface ShareItem {
   fileId: number
   token: string
   hasPassword: boolean
+  password: string | null
   expireAt: string | null
   downloadCount: number
   createdAt: string

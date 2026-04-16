@@ -85,7 +85,7 @@ onMounted(load)
 .table td { padding: 10px 16px; border-bottom: 1px solid var(--border, #e5e7eb); vertical-align: middle; }
 .table tbody tr:last-child td { border-bottom: none; }
 .data-row { transition: background 0.12s; }
-.data-row:hover td { background: var(--bg-hover, #f5f5ff); }
+.data-row:hover { background: var(--bg-hover, #f5f5ff); }
 .td-name { display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-1, #111827); }
 .fi { font-size: 17px; flex-shrink: 0; }
 .fn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -100,8 +100,8 @@ onMounted(load)
 }
 .act-btn:hover { border-color: var(--accent, #6366f1); color: var(--accent, #6366f1); background: rgba(99,102,241,.05); }
 
-.danger-btn { border-color: #fca5a5; color: #ef4444; }
-.danger-btn:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.05); }
+.act-btn.danger-btn { border-color: #fca5a5; color: #ef4444; }
+.act-btn.danger-btn:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.05); }
 
-.danger-text:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.05); }
+.act-btn.danger-text:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.05); }
 </style>

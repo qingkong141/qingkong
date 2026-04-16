@@ -49,12 +49,15 @@ class ShareResponse(BaseSchema):
     file_id: int
     token: str
     has_password: bool
+    password: str | None = None
     expire_at: datetime | None
     download_count: int
     created_at: datetime
     file_name: str
     file_size: int
     is_dir: bool
+
+
 
 
 class ShareAccessRequest(BaseSchema):

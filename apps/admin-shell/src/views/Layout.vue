@@ -68,13 +68,18 @@ function toggleMenu(name: string) {
   else expandedMenus.value.add(name)
 }
 
-function isChildActive(path: string) {
-  return route.path === path || route.path.startsWith(path + '/')
+function isChildActive(child: { path: string }, siblings: { path: string }[]) {
+  if (route.path === child.path) return true
+  const hasMoreSpecific = siblings.some(
+    s => s.path !== child.path && route.path.startsWith(s.path)
+  )
+  if (hasMoreSpecific) return false
+  return route.path.startsWith(child.path + '/')
 }
 
 function isGroupActive(item: MenuItem) {
   if (!item.children) return route.path.startsWith(item.path)
-  return item.children.some(c => isChildActive(c.path))
+  return item.children.some(c => isChildActive(c, item.children!))
 }
 </script>
 
@@ -113,7 +118,7 @@ function isGroupActive(item: MenuItem) {
               :key="child.path"
               :to="child.path"
               class="sub-item"
-              :class="{ active: isChildActive(child.path) }"
+              :class="{ active: isChildActive(child, item.children!) }"
             >
               <span class="sub-dot"/>
               {{ child.label }}

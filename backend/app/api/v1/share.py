@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,22 +15,24 @@ from app.services import share as share_service
 router = APIRouter(tags=["分享"])
 
 
-def _share_to_response(share) -> dict:
+
+def _share_to_response(share) -> ShareResponse:
     return ShareResponse(
         id=share.id,
         file_id=share.file_id,
         token=share.token,
         has_password=bool(share.password),
+        password=share.password,
         expire_at=share.expire_at,
         download_count=share.download_count,
         created_at=share.created_at,
         file_name=share.file.name if share.file else "",
         file_size=share.file.size if share.file else 0,
         is_dir=share.file.is_dir if share.file else False,
-    ).model_dump(by_alias=True)
+    )
 
 
-@router.post("/shares", status_code=201)
+@router.post("/shares", status_code=201, response_model=ShareResponse)
 async def create_share(
     data: CreateShareRequest,
     current_user: User = Depends(get_current_user),
@@ -48,13 +51,29 @@ async def create_share(
     return _share_to_response(share)
 
 
-@router.get("/shares", response_model=list[ShareResponse])
+@router.get("/shares")
 async def list_shares(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     shares = await share_service.list_shares(current_user.id, db)
-    return [_share_to_response(s) for s in shares]
+    data = [
+        {
+            "id": s.id,
+            "fileId": s.file_id,
+            "token": s.token,
+            "hasPassword": bool(s.password),
+            "password": s.password,
+            "expireAt": s.expire_at.isoformat() if s.expire_at else None,
+            "downloadCount": s.download_count,
+            "createdAt": s.created_at.isoformat() if s.created_at else None,
+            "fileName": s.file.name if s.file else "",
+            "fileSize": s.file.size if s.file else 0,
+            "isDir": s.file.is_dir if s.file else False,
+        }
+        for s in shares
+    ]
+    return JSONResponse(content=data)
 
 
 @router.delete("/shares/{share_id}", status_code=204)

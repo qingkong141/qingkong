@@ -51,7 +51,10 @@ onMounted(load)
         <tbody>
           <tr v-for="s in shares" :key="s.id" class="data-row">
             <td class="td-name"><span class="fi">{{ s.isDir ? '📁' : '📃' }}</span><span class="fn">{{ s.fileName }}</span></td>
-            <td class="td-meta"><span class="badge" :class="s.hasPassword ? 'badge-on' : 'badge-off'">{{ s.hasPassword ? '有' : '无' }}</span></td>
+            <td class="td-meta">
+              <span v-if="s.password" class="pw-text" :title="s.password">{{ s.password }}</span>
+              <span v-else class="badge badge-off">无</span>
+            </td>
             <td class="td-meta">{{ fmtDate(s.expireAt) }}</td>
             <td class="td-meta">{{ s.downloadCount }}</td>
             <td class="td-actions">
@@ -79,15 +82,20 @@ onMounted(load)
 .table td { padding: 10px 16px; border-bottom: 1px solid var(--border, #e5e7eb); vertical-align: middle; }
 .table tbody tr:last-child td { border-bottom: none; }
 .data-row { transition: background 0.12s; }
-.data-row:hover td { background: var(--bg-hover, #f5f5ff); }
+.data-row:hover { background: var(--bg-hover, #f5f5ff); }
 .td-name { display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-1, #111827); }
 .fi { font-size: 17px; flex-shrink: 0; }
 .fn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .td-meta { color: var(--text-2, #6b7280); }
 .td-actions { display: flex; gap: 4px; }
 
+.pw-text {
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 12px; color: var(--text-1, #111827);
+  background: var(--bg-page, #f9fafb); padding: 2px 8px; border-radius: 4px;
+  border: 1px solid var(--border, #e5e7eb); user-select: all;
+}
 .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-.badge-on { background: #fef3c7; color: #b45309; }
 .badge-off { background: #f3f4f6; color: #6b7280; }
 
 .act-btn {
@@ -97,5 +105,5 @@ onMounted(load)
   cursor: pointer; transition: all 0.12s; white-space: nowrap;
 }
 .act-btn:hover { border-color: var(--accent, #6366f1); color: var(--accent, #6366f1); background: rgba(99,102,241,.05); }
-.danger-text:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.05); }
+.act-btn.danger-text:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.05); }
 </style>
