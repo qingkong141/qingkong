@@ -40,7 +40,11 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    // 仅服务端使用：SSR 期间直接连接同一 docker 网络中的后端
+    // docker-compose.prod.yml 通过 env NUXT_API_INTERNAL 注入
+    apiInternal: '',
     public: {
+      // 浏览器侧：走 nginx 反代，同源调用
       apiBase: '/qingkong',
     },
   },

@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? '/admin/' : '/',
   plugins: [vue()],
   server: {
     port: 3000,
@@ -12,4 +13,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

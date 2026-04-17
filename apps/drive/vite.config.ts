@@ -2,7 +2,8 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import qiankun from 'vite-plugin-qiankun'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? '/drive/' : '/',
   plugins: [
     vue(),
     qiankun('drive', { useDevMode: true }),
@@ -20,4 +21,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

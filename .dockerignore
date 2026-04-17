@@ -1,0 +1,29 @@
+**/node_modules
+**/.turbo
+**/.nuxt
+**/.output
+**/dist
+**/coverage
+**/.vscode
+**/.idea
+**/.git
+**/*.log
+
+# Python
+backend/venv
+backend/.venv
+**/__pycache__
+**/*.pyc
+
+# 本地环境变量（生产用 .env.production / compose env_file）
+.env
+**/.env.local
+**/.env.development
+backend/.env
+
+# 文档 & 临时
+*.md
+!README.md
+terminals/
+agent-transcripts/
+mcps/

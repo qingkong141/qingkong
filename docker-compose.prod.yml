@@ -1,0 +1,118 @@
+name: qingkong-prod
+
+services:
+
+  # ── 基础设施 ────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: qingkong-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [qingkong-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: qingkong-redis
+    restart: always
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks: [qingkong-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: qingkong-minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    networks: [qingkong-net]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── 应用层 ──────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: qingkong/backend:latest
+    container_name: qingkong-backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      SECRET_KEY: ${JWT_SECRET_KEY}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      DEBUG: "false"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+      minio:    { condition: service_healthy }
+    networks: [qingkong-net]
+
+  nuxt-blog:
+    build:
+      context: .
+      dockerfile: apps/nuxt3-blog/Dockerfile
+    image: qingkong/nuxt-blog:latest
+    container_name: qingkong-nuxt-blog
+    restart: always
+    environment:
+      NITRO_PORT: 3000
+      NITRO_HOST: 0.0.0.0
+      # SSR 期间直连后端，避免走外网 nginx
+      NUXT_API_INTERNAL: http://backend:8000/qingkong
+    depends_on:
+      - backend
+    networks: [qingkong-net]
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    image: qingkong/nginx:latest
+    container_name: qingkong-nginx
+    restart: always
+    ports:
+      - "80:80"
+      # 若要启用 HTTPS，解开下一行并挂载证书到 /etc/nginx/certs
+      # - "443:443"
+    depends_on:
+      - backend
+      - nuxt-blog
+    networks: [qingkong-net]
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+
+networks:
+  qingkong-net:
+    driver: bridge

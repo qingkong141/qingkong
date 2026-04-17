@@ -461,23 +461,27 @@ shares         分享表
 
 ### Phase 9 — 部署与上线（Sessions 48~50）
 
-- [ ] **Session 48**：Nginx 配置
-  - 统一路由分发规则
-  - `/` → Nuxt 3，`/admin` → qiankun，`/api` → FastAPI
-  - gzip 压缩、静态资源缓存配置
-  - **验收**：所有路径通过 Nginx 正确转发
+- [x] **Session 48**：Nginx 配置
+  - 统一路由分发规则（`nginx/nginx.conf`）
+  - `/` → Nuxt 3，`/admin` + `/blog-admin/` + `/drive/` → qiankun 主壳与子应用静态，`/qingkong` → FastAPI
+  - gzip 压缩、静态资源长缓存、安全响应头
+  - **验收**：所有路径通过 Nginx 正确转发（配置已就绪，待 compose 启动验证）
 
-- [ ] **Session 49**：Docker 生产环境
-  - 各服务 Dockerfile（多阶段构建）
-  - 生产环境变量管理（`.env.production`）
-  - docker-compose.prod.yml
-  - **验收**：生产镜像构建成功
+- [x] **Session 49**：Docker 生产环境
+  - `backend/Dockerfile`（多阶段，非 root 用户，含 healthcheck）
+  - `apps/nuxt3-blog/Dockerfile`（多阶段 Node SSR）
+  - `nginx/Dockerfile`（构建 3 个静态子应用 + nginx 反代一体）
+  - `.dockerignore` + 各 Vite `base` 与 qiankun 生产 entry 适配
+  - 生产环境变量管理（`.env.production.example`）
+  - `docker-compose.prod.yml`
+  - **验收**：`docker compose --env-file .env.production -f docker-compose.prod.yml build` 即可产出镜像
 
 - [ ] **Session 50**：全链路联调 + 上线
   - 完整流程测试（注册→登录→写博客→上传文件→分享）
   - Bug 修复
   - 正式上线
   - **验收**：系统完整可用
+  - 冒烟测试清单已整理进 `DEPLOY.md`
 
 ---
 
