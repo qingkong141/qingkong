@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +27,18 @@ class Settings(BaseSettings):
 
     # 应用
     DEBUG: bool = False
+
+    # 防呆：关键秘钥不能为空（compose 忘了 --env-file 时会直接拒绝启动）
+    @field_validator("SECRET_KEY", "MINIO_BUCKET")
+    @classmethod
+    def _not_blank(cls, v: str, info) -> str:
+        if not v or not v.strip():
+            raise ValueError(
+                f"环境变量 {info.field_name} 未正确加载（为空字符串）。"
+                "请确认容器启动时 --env-file 已指向 .env.production，"
+                "或本机 backend/.env 中该项已配置。"
+            )
+        return v
 
 
 settings = Settings()
