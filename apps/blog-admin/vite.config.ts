@@ -15,7 +15,7 @@ export default defineConfig({
     },
     proxy: {
       '/qingkong': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:18000',
         changeOrigin: true,
       },
     },

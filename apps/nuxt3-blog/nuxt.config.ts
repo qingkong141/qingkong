@@ -33,7 +33,7 @@ export default defineNuxtConfig({
   nitro: {
     devProxy: {
       '/qingkong': {
-        target: 'http://127.0.0.1:8000/qingkong',
+        target: 'http://127.0.0.1:18000/qingkong',
         changeOrigin: true,
       },
     },
