@@ -1,11 +1,11 @@
-name: qingkong-prod
+name: yunpan-prod
 
 services:
 
   # ── 基础设施 ────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
-    container_name: qingkong-postgres-prod
+    container_name: yunpan-postgres-prod
     restart: always
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -13,7 +13,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks: [qingkong-net]
+    networks: [yunpan-net]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -22,12 +22,12 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: qingkong-redis-prod
+    container_name: yunpan-redis-prod
     restart: always
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
     volumes:
       - redis_data:/data
-    networks: [qingkong-net]
+    networks: [yunpan-net]
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
@@ -36,7 +36,7 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: qingkong-minio-prod
+    container_name: yunpan-minio-prod
     restart: always
     command: server /data --console-address ":9001"
     environment:
@@ -44,7 +44,7 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
-    networks: [qingkong-net]
+    networks: [yunpan-net]
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 10s
@@ -56,8 +56,8 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    image: qingkong/backend:latest
-    container_name: qingkong-backend-prod
+    image: yunpan/backend:latest
+    container_name: yunpan-backend-prod
     restart: always
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -74,22 +74,22 @@ services:
       postgres: { condition: service_healthy }
       redis:    { condition: service_healthy }
       minio:    { condition: service_healthy }
-    networks: [qingkong-net]
+    networks: [yunpan-net]
 
   nginx:
     build:
       context: .
       dockerfile: nginx/Dockerfile
-    image: qingkong/nginx:latest
-    container_name: qingkong-nginx-prod
+    image: yunpan/nginx:latest
+    container_name: yunpan-nginx-prod
     restart: always
     ports:
-      - "80:80"
+      - "3847:80"
       # 若要启用 HTTPS，解开下一行并挂载证书到 /etc/nginx/certs
       # - "443:443"
     depends_on:
       - backend
-    networks: [qingkong-net]
+    networks: [yunpan-net]
 
 volumes:
   postgres_data:
@@ -97,5 +97,5 @@ volumes:
   minio_data:
 
 networks:
-  qingkong-net:
+  yunpan-net:
     driver: bridge

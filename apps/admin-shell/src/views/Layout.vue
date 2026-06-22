@@ -49,6 +49,16 @@ const menuItems: MenuItem[] = [
   },
 ]
 
+// 管理员菜单
+const adminMenuItems: MenuItem[] = [
+  {
+    name: 'admin-users',
+    label: '用户管理',
+    path: '/admin/users',
+    icon: '☷',
+  },
+]
+
 const expandedMenus = ref<Set<string>>(new Set(['drive']))
 
 function toggleMenu(name: string) {
@@ -79,7 +89,7 @@ function isGroupActive(item: MenuItem) {
 
       <!-- logo 区域，与右侧顶栏等高 -->
       <div class="sidebar-header">
-        <div class="brand-icon">Q</div>
+        <div class="brand-icon"><img src="/logo/logo.svg" alt="臻橙云盘" class="brand-logo-img" /></div>
         <span v-if="!collapsed" class="brand-name">臻橙云盘</span>
       </div>
 
@@ -124,6 +134,22 @@ function isGroupActive(item: MenuItem) {
             <span v-if="!collapsed" class="menu-label">{{ item.label }}</span>
           </router-link>
         </div>
+
+        <!-- 管理员菜单 -->
+        <template v-if="authStore.user?.isAdmin">
+          <p v-if="!collapsed" class="nav-label" style="margin-top:8px">管理</p>
+          <div v-for="item in adminMenuItems" :key="item.name" class="menu-group">
+            <router-link
+              :to="item.path"
+              class="menu-item"
+              :class="{ active: isGroupActive(item) }"
+              :title="collapsed ? item.label : ''"
+            >
+              <span class="menu-icon">{{ item.icon }}</span>
+              <span v-if="!collapsed" class="menu-label">{{ item.label }}</span>
+            </router-link>
+          </div>
+        </template>
       </nav>
     </aside>
 
@@ -163,7 +189,7 @@ function isGroupActive(item: MenuItem) {
           <div class="user-dropdown">
             <div class="user-area">
               <div class="user-avatar">
-                <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" class="avatar-img" />
+                <img v-if="authStore.user?.avatar" :src="authStore.user.avatar + '?t=' + authStore.avatarStamp" class="avatar-img" />
                 <span v-else class="avatar-letter">
                   {{ authStore.user?.username?.charAt(0).toUpperCase() }}
                 </span>
@@ -181,6 +207,12 @@ function isGroupActive(item: MenuItem) {
                   <span class="d-email">{{ authStore.user?.email }}</span>
                 </div>
                 <div class="dropdown-divider" />
+                <button class="dropdown-item" @click="router.push('/admin/profile')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                  </svg>
+                  个人设置
+                </button>
                 <button class="dropdown-item danger" @click="handleLogout">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -295,11 +327,11 @@ function isGroupActive(item: MenuItem) {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
   flex-shrink: 0;
+  padding: 4px;
+  box-sizing: border-box;
 }
+.brand-logo-img { width: 100%; height: 100%; object-fit: contain; filter: brightness(0) invert(1); }
 
 .brand-name {
   font-size: 15px;
@@ -612,10 +644,26 @@ function isGroupActive(item: MenuItem) {
 .content {
   flex: 1;
   overflow: auto;
-  padding: 10px;
+  padding: 20px;
   background: var(--bg-page);
   transition: background 0.3s;
 }
 
 #micro-container { min-height: 100%; }
+
+/* ── 移动端 ── */
+@media (max-width: 768px) {
+  .sidebar { width: 64px; }
+  .sidebar .nav-label { display: none; }
+  .sidebar .brand-name { display: none; }
+  .sidebar .menu-label { display: none; }
+  .sidebar .menu-arrow { display: none; }
+  .sidebar .sub-menu { display: none; }
+  .sidebar .menu-item { justify-content: center; margin: 2px 8px; padding: 10px 0; gap: 0; }
+  .content { padding: 12px; }
+  .topbar { padding: 0 12px; }
+  .username { display: none; }
+  .card-body { max-height: calc(100vh - 180px); }
+  .card-body .table { min-width: 600px; }
+}
 </style>

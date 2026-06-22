@@ -33,12 +33,21 @@ async def register(data: RegisterRequest, db: AsyncSession) -> User:
 
 
 async def login(data: LoginRequest, db: AsyncSession) -> dict:
-    """登录，返回双 Token，refresh_token 存 Redis"""
-    result = await db.execute(select(User).where(User.email == data.email))
+    """登录，返回双 Token，refresh_token 存 Redis。account 支持用户名或邮箱"""
+    from sqlalchemy import or_
+
+    result = await db.execute(
+        select(User).where(
+            or_(User.username == data.account, User.email == data.account)
+        )
+    )
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(data.password, user.password_hash):
-        raise ValueError("邮箱或密码错误")
+        raise ValueError("用户名或密码错误")
+
+    if not user.is_approved:
+        raise ValueError("账户尚未通过审核，请联系管理员")
 
     access_token = create_access_token(user.id)
     refresh_token = create_refresh_token(user.id)

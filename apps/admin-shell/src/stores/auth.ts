@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { authApi } from '@qingkong/shared-api'
-import type { User, LoginRequest } from '@qingkong/shared-types'
+import { authApi } from '@yunpan/shared-api'
+import type { User, LoginRequest } from '@yunpan/shared-types'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const accessToken = ref<string | null>(localStorage.getItem('access_token'))
   const refreshToken = ref<string | null>(localStorage.getItem('refresh_token'))
+  const avatarStamp = ref(0)
 
   const isLoggedIn = () => !!accessToken.value
 
@@ -20,6 +21,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function fetchUser() {
     user.value = await authApi.me()
+    avatarStamp.value = Date.now()
   }
 
   async function logout() {
@@ -33,5 +35,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('refresh_token')
   }
 
-  return { user, accessToken, isLoggedIn, login, fetchUser, logout }
+  return { user, accessToken, avatarStamp, isLoggedIn, login, fetchUser, logout }
 })

@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
 
-const BASE_URL = '/qingkong'
+const BASE_URL = '/yunpan'
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -31,7 +31,7 @@ apiClient.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token')
       if (refreshToken) {
         try {
-          const res = await axios.post(`/qingkong/auth/refresh`, { refreshToken })
+          const res = await axios.post(`/yunpan/auth/refresh`, { refreshToken })
           const newToken = res.data.accessToken
           const newRefresh = res.data.refreshToken
           localStorage.setItem('access_token', newToken)

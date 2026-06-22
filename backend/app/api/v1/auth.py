@@ -59,7 +59,10 @@ async def me(current_user: User = Depends(get_current_user)):
         id=current_user.id,
         username=current_user.username,
         email=current_user.email,
-        avatar=f"/qingkong/auth/avatar/{current_user.id}" if current_user.avatar else None,
+        avatar=f"/yunpan/auth/avatar/{current_user.id}" if current_user.avatar else None,
+        is_admin=current_user.is_admin,
+        storage_used=current_user.storage_used,
+        storage_quota=current_user.storage_quota,
     )
 
 
@@ -71,7 +74,7 @@ async def get_avatar(user_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="头像不存在")
 
     # 从存储的完整 URL 中提取 MinIO object 路径
-    # 例：http://127.0.0.1:9000/qingkong/avatars/1/xxx.jpg → avatars/1/xxx.jpg
+    # 例：http://127.0.0.1:9000/yunpan/avatars/1/xxx.jpg → avatars/1/xxx.jpg
     bucket_prefix = f"/{settings.MINIO_BUCKET}/"
     idx = user.avatar.find(bucket_prefix)
     if idx == -1:
@@ -81,7 +84,14 @@ async def get_avatar(user_id: int, db: AsyncSession = Depends(get_db)):
     # 从 MinIO 读取图片并流式返回
     response = minio_client.get_object(settings.MINIO_BUCKET, object_name)
     media_type = response.headers.get("content-type", "image/jpeg")
-    return StreamingResponse(response, media_type=media_type)
+    return StreamingResponse(
+        response,
+        media_type=media_type,
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+        },
+    )
 
 
 @router.put("/password", status_code=204)
@@ -128,3 +138,106 @@ async def upload_avatar(
     user = await auth_service.update_avatar(current_user, avatar_url, db)
 
     return {"avatar": user.avatar}
+
+
+# ── 管理员接口 ────────────────────────────────
+
+from sqlalchemy import select as sa_select
+
+
+async def _require_admin(current_user: User = Depends(get_current_user)):
+    """依赖注入：仅管理员可调用"""
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="仅管理员可操作")
+    return current_user
+
+
+@router.get("/admin/users")
+async def admin_list_users(
+    status: str | None = None,
+    current_user: User = Depends(_require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """管理员查看用户列表：status=approved|pending|all"""
+    stmt = sa_select(User)
+    if status == "approved":
+        stmt = stmt.where(User.is_approved == True, User.is_admin == False)
+    elif status == "pending":
+        stmt = stmt.where(User.is_approved == False, User.is_admin == False)
+    else:
+        stmt = stmt.where(User.is_admin == False)
+    stmt = stmt.order_by(User.created_at.desc())
+    result = await db.execute(stmt)
+    users = result.scalars().all()
+    return [
+        {
+            "id": u.id,
+            "username": u.username,
+            "email": u.email,
+            "isApproved": u.is_approved,
+            "storageUsed": u.storage_used,
+            "storageQuota": u.storage_quota,
+            "createdAt": u.created_at.isoformat() if u.created_at else None,
+        }
+        for u in users
+    ]
+
+
+@router.put("/admin/users/{user_id}/approve")
+async def admin_approve_user(
+    user_id: int,
+    current_user: User = Depends(_require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """审核通过用户"""
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    user.is_approved = True
+    await db.commit()
+    return {"id": user.id, "isApproved": True}
+
+
+@router.delete("/admin/users/{user_id}", status_code=204)
+async def admin_delete_user(
+    user_id: int,
+    current_user: User = Depends(_require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除用户"""
+    user = await db.get(User, user_id)
+    if not user or user.is_admin:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    await db.delete(user)
+    await db.commit()
+
+
+@router.put("/admin/users/{user_id}/disable")
+async def admin_disable_user(
+    user_id: int,
+    current_user: User = Depends(_require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """吊销审核，禁用用户"""
+    user = await db.get(User, user_id)
+    if not user or user.is_admin:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    user.is_approved = False
+    await db.commit()
+    return {"id": user.id, "isApproved": False}
+
+
+@router.put("/admin/users/{user_id}/quota")
+async def admin_set_quota(
+    user_id: int,
+    quota_gb: int,
+    current_user: User = Depends(_require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """管理员设置用户存储配额，单位为 GB"""
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    user.storage_quota = quota_gb * 1024 * 1024 * 1024
+    await db.commit()
+    return {"id": user.id, "storageQuota": user.storage_quota, "storageQuotaGB": quota_gb}

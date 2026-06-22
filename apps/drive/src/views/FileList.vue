@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { fileApi, shareApi } from '@qingkong/shared-api'
-import type { FileItem } from '@qingkong/shared-api'
+import { fileApi, shareApi } from '@yunpan/shared-api'
+import type { FileItem } from '@yunpan/shared-api'
 import FilePreview from '../components/FilePreview.vue'
 import { useToast } from '../composables/useToast'
 import { useConfirm } from '../composables/useConfirm'
@@ -104,7 +104,7 @@ function clearDone() { uploads.value = uploads.value.filter(t => t.status === 'u
 function onCtx(e: MouseEvent, f: FileItem) { e.preventDefault(); ctx.value = { show: true, x: e.clientX, y: e.clientY, file: f } }
 function closeCtx() { ctx.value.show = false }
 
-async function handleDownload() { const f = ctx.value.file; closeCtx(); if (!f || f.isDir) return; try { const { url } = await fileApi.download(f.id); window.open(url, '_blank') } catch (e: any) { toast.error(e.message) } }
+async function handleDownload() { const f = ctx.value.file; closeCtx(); if (!f || f.isDir) return; try { const { url } = await fileApi.download(f.id); const iframe = document.createElement('iframe'); iframe.style.display = 'none'; iframe.src = url; document.body.appendChild(iframe); setTimeout(() => document.body.removeChild(iframe), 3000) } catch (e: any) { toast.error(e.message) } }
 function startRename() { const f = ctx.value.file; closeCtx(); if (f) renaming.value = { id: f.id, name: f.name } }
 async function submitRename() { if (!renaming.value) return; try { await fileApi.rename(renaming.value.id, renaming.value.name); renaming.value = null; loadFiles(); toast.success('已重命名') } catch (e: any) { toast.error(e.message) } }
 async function loadMoveFolders(parentId: number | null) {
@@ -146,6 +146,7 @@ async function handleDelete() {
 }
 
 function startShare() { shareFile.value = ctx.value.file; closeCtx(); sharePassword.value = ''; shareExpireHours.value = null; shareAllowDownload.value = false; showShareDialog.value = true }
+function startShareInline(f: FileItem) { shareFile.value = f; sharePassword.value = ''; shareExpireHours.value = null; shareAllowDownload.value = false; showShareDialog.value = true }
 async function submitShare() {
   if (!shareFile.value) return
   try {
@@ -197,26 +198,33 @@ loadFiles()
       <div v-if="loading" class="empty-state">加载中…</div>
       <div v-else-if="!files.length" class="empty-state"><span class="empty-icon">📂</span><br/>拖拽文件到此处，或点击上方上传</div>
 
+      <div v-else-if="viewMode === 'list'" class="card-body">
       <!-- List -->
-      <table v-else-if="viewMode === 'list'" class="table">
-        <thead><tr><th>名称</th><th>大小</th><th>修改时间</th></tr></thead>
+      <table class="table">
+        <thead><tr><th>名称</th><th>大小</th><th>修改时间</th><th style="width:80px">操作</th></tr></thead>
         <tbody>
           <tr v-for="f in files" :key="f.id" class="data-row" @dblclick="openFile(f)" @contextmenu="onCtx($event, f)">
-            <td class="td-name">
-              <span class="fi">{{ icon(f) }}</span>
-              <template v-if="renaming?.id === f.id">
-                <input v-model="renaming.name" class="form-input rename-inp" @keyup.enter="submitRename" @keyup.esc="renaming = null" @blur="submitRename" />
-              </template>
-              <span v-else class="fn">{{ f.name }}</span>
+            <td>
+              <div class="td-name">
+                <span class="fi">{{ icon(f) }}</span>
+                <template v-if="renaming?.id === f.id">
+                  <input v-model="renaming.name" class="form-input rename-inp" @keyup.enter="submitRename" @keyup.esc="renaming = null" /><button class="act-btn act-btn-sm" @click="renaming = null">✕</button><button class="act-btn act-btn-sm" @click="submitRename">✓</button>
+                </template>
+                <span v-else class="fn">{{ f.name }}</span>
+              </div>
             </td>
             <td class="td-meta">{{ f.isDir ? '-' : fmtSize(f.size) }}</td>
             <td class="td-meta">{{ fmtDate(f.updatedAt) }}</td>
+            <td class="td-actions" @dblclick.stop @click.stop>
+              <button v-if="!f.isDir" class="act-btn act-btn-sm" @click="startShareInline(f)">🔗</button>
+            </td>
           </tr>
         </tbody>
       </table>
+      </div>
 
       <!-- Grid -->
-      <div v-else class="grid">
+      <div v-else-if="viewMode === 'grid'" class="grid card-body">
         <div v-for="f in files" :key="f.id" class="grid-card" @dblclick="openFile(f)" @contextmenu="onCtx($event, f)">
           <div class="gc-icon">{{ icon(f) }}</div>
           <div class="gc-name" :title="f.name">{{ f.name }}</div>
@@ -260,7 +268,9 @@ loadFiles()
           </div>
           <!-- 当前目录按钮 -->
           <div class="modal-actions modal-actions-top">
-            <button class="m-btn m-btn-primary" @click="submitMove(moveParentId)">📂 移动到当前目录</button>
+            <button class="m-btn m-btn-primary" @click="submitMove(moveParentId)">
+             📂 移动到「{{ moveBreadcrumbs[moveBreadcrumbs.length - 1]?.name || '根目录' }}」
+           </button>
           </div>
           <!-- 子文件夹列表 -->
           <div class="move-list">
@@ -324,7 +334,7 @@ loadFiles()
 
 <style scoped>
 /* ── Page Head ── */
-.page-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 16px; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; }
 .page-title { font-size: 17px; font-weight: 700; color: var(--text-1, #111827); margin: 0 0 2px; }
 .page-sub { font-size: 12px; color: var(--text-3, #9ca3af); margin: 0; }
 .bc-link { color: var(--accent, #6366f1); cursor: pointer; text-decoration: none; }
@@ -349,6 +359,8 @@ loadFiles()
 }
 .act-btn:hover { border-color: var(--accent, #6366f1); color: var(--accent, #6366f1); background: rgba(99,102,241,.05); }
 .act-btn.icon-only { padding: 0 10px; font-size: 16px; }
+.act-btn-sm { padding: 0 8px; height: 28px; font-size: 13px; }
+.td-actions { white-space: nowrap; }
 
 .link-btn { background: none; border: none; color: var(--accent, #6366f1); cursor: pointer; font-size: 12px; padding: 0; }
 
@@ -361,6 +373,8 @@ loadFiles()
   position: relative; background: var(--bg-surface, #fff); border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px; overflow: hidden; min-height: 260px;
 }
+.card-body { max-height: calc(100vh - 220px); overflow-y: auto; }
+.card-body .table th { position: sticky; top: 0; z-index: 1; }
 .card.drag-over { outline: 2px dashed var(--accent, #6366f1); outline-offset: -3px; }
 .drop-hint {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -372,11 +386,11 @@ loadFiles()
 /* ── Table ── */
 .table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .table th {
-  padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600;
+  padding: 10px 20px; text-align: left; font-size: 11px; font-weight: 600;
   color: var(--text-3, #9ca3af); text-transform: uppercase; letter-spacing: 0.06em;
   background: var(--bg-page, #f9fafb); border-bottom: 1px solid var(--border, #e5e7eb); white-space: nowrap;
 }
-.table td { padding: 10px 16px; border-bottom: 1px solid var(--border, #e5e7eb); vertical-align: middle; }
+.table td { padding: 10px 20px; border-bottom: 1px solid var(--border, #e5e7eb); vertical-align: middle; }
 .table tbody tr:last-child td { border-bottom: none; }
 .data-row { cursor: pointer; transition: background 0.12s; }
 .data-row:hover { background: var(--bg-hover, #f5f5ff); }
@@ -386,7 +400,7 @@ loadFiles()
 .fn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .td-meta { color: var(--text-2, #6b7280); white-space: nowrap; }
 
-.rename-inp { width: 200px; height: 28px; font-size: 13px; }
+.rename-inp { width: 160px; height: 28px; font-size: 13px; }
 
 /* ── Grid ── */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 4px; padding: 12px; }

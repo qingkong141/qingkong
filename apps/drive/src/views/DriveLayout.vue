@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { fileApi } from '@qingkong/shared-api'
-import type { StorageUsage } from '@qingkong/shared-api'
+import { fileApi } from '@yunpan/shared-api'
+import type { StorageUsage } from '@yunpan/shared-api'
 
 const usage = ref<StorageUsage | null>(null)
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -124,15 +124,48 @@ async def access_share(
     }
 
 
+@router.get("/s/{token}/browse")
+async def browse_shared_folder(
+    token: str,
+    parent_id: int | None = Query(default=None, alias="parentId"),
+    password: str | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """浏览分享的文件夹内容"""
+    try:
+        share, files = await share_service.browse_shared_folder(token, password, parent_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    items = [
+        {
+            "id": f.id,
+            "name": f.name,
+            "size": f.size,
+            "mimeType": f.mime_type,
+            "isDir": f.is_dir,
+            "updatedAt": f.updated_at.isoformat() if f.updated_at else None,
+        }
+        for f in files
+    ]
+    return {
+        "parentId": parent_id or share.file.id,
+        "folderName": share.file.name,
+        "allowDownload": share.allow_download,
+        "items": items,
+    }
+
+
 @router.post("/s/{token}/download")
 async def download_shared(
     token: str,
     data: ShareAccessRequest | None = None,
+    file_id: int | None = Query(default=None, alias="fileId"),
     db: AsyncSession = Depends(get_db),
 ):
     password = data.password if data else None
     try:
-        share, url = await share_service.download_shared_file(token, password, db)
+        share, url = await share_service.download_shared_file(token, password, db, file_id)
     except ValueError as e:
         raise HTTPException(status_code=403, detail=str(e))
 
@@ -143,13 +176,14 @@ async def download_shared(
 async def stream_shared(
     token: str,
     password: str | None = None,
+    file_id: int | None = Query(default=None, alias="fileId"),
     db: AsyncSession = Depends(get_db),
 ):
     """后端流代理：视频/音频文件不暴露 MinIO 真实 URL，通过后端转发"""
     from fastapi.responses import Response
 
     try:
-        share, content, mime_type, filename = await share_service.get_share_file_stream(token, password, db)
+        share, content, mime_type, filename = await share_service.get_share_file_stream(token, password, db, file_id)
     except ValueError as e:
         raise HTTPException(status_code=403, detail=str(e))
 

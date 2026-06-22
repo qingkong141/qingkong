@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { fileApi } from '@qingkong/shared-api'
-import type { FileItem } from '@qingkong/shared-api'
+import { fileApi } from '@yunpan/shared-api'
+import type { FileItem } from '@yunpan/shared-api'
 import { useToast } from '../composables/useToast'
 import { useConfirm } from '../composables/useConfirm'
 
@@ -36,6 +36,7 @@ async function emptyAll() {
 }
 
 function fmtSize(b: number) { if (!b) return '-'; const u = ['B','KB','MB','GB']; let i = 0, s = b; while (s >= 1024 && i < u.length - 1) { s /= 1024; i++ } return `${s.toFixed(i ? 1 : 0)} ${u[i]}` }
+function fmtDate(d: string) { return new Date(d).toLocaleDateString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) }
 
 onMounted(load)
 </script>
@@ -54,19 +55,20 @@ onMounted(load)
       <div v-if="loading" class="empty-state">加载中…</div>
       <div v-else-if="!files.length" class="empty-state"><span class="empty-icon">🗑️</span><br/>回收站为空</div>
 
-      <table v-else class="table">
-        <thead><tr><th>名称</th><th>大小</th><th>操作</th></tr></thead>
+      <div v-else class="card-body"><table class="table">
+        <thead><tr><th>名称</th><th>大小</th><th>删除时间</th><th style="width:110px;text-align:right">操作</th></tr></thead>
         <tbody>
           <tr v-for="f in files" :key="f.id" class="data-row">
-            <td class="td-name"><span class="fi">{{ f.isDir ? '📁' : '📃' }}</span><span class="fn">{{ f.name }}</span></td>
+            <td><div class="td-name"><span class="fi">{{ f.isDir ? '📁' : '📃' }}</span><span class="fn">{{ f.name }}</span></div></td>
             <td class="td-meta">{{ f.isDir ? '-' : fmtSize(f.size) }}</td>
+            <td class="td-meta">{{ fmtDate(f.updatedAt) }}</td>
             <td class="td-actions">
               <button class="act-btn" @click="restore(f.id)">↩ 还原</button>
-              <button class="act-btn danger-text" @click="permanentDel(f.id)">✕ 彻底删除</button>
+              <button class="act-btn danger-text" @click="permanentDel(f.id)">✕</button>
             </td>
           </tr>
         </tbody>
-      </table>
+      </table></div>
     </div>
   </div>
 </template>
@@ -77,12 +79,14 @@ onMounted(load)
 .page-sub { font-size: 12px; color: var(--text-3, #9ca3af); margin: 0; }
 
 .card { background: var(--bg-surface, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 12px; overflow: hidden; }
+.card-body { max-height: calc(100vh - 220px); overflow-y: auto; }
+.card-body .table th { position: sticky; top: 0; z-index: 1; }
 .empty-state { padding: 60px 16px; text-align: center; color: var(--text-3, #9ca3af); font-size: 13px; line-height: 1.8; }
 .empty-icon { font-size: 40px; }
 
 .table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.table th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-3, #9ca3af); text-transform: uppercase; letter-spacing: 0.06em; background: var(--bg-page, #f9fafb); border-bottom: 1px solid var(--border, #e5e7eb); white-space: nowrap; }
-.table td { padding: 10px 16px; border-bottom: 1px solid var(--border, #e5e7eb); vertical-align: middle; }
+.table th { padding: 10px 20px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-3, #9ca3af); text-transform: uppercase; letter-spacing: 0.06em; background: var(--bg-page, #f9fafb); border-bottom: 1px solid var(--border, #e5e7eb); white-space: nowrap; }
+.table td { padding: 10px 20px; border-bottom: 1px solid var(--border, #e5e7eb); vertical-align: middle; }
 .table tbody tr:last-child td { border-bottom: none; }
 .data-row { transition: background 0.12s; }
 .data-row:hover { background: var(--bg-hover, #f5f5ff); }
@@ -90,7 +94,8 @@ onMounted(load)
 .fi { font-size: 17px; flex-shrink: 0; }
 .fn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .td-meta { color: var(--text-2, #6b7280); }
-.td-actions { display: flex; gap: 4px; }
+.td-actions { text-align: right; white-space: nowrap; }
+.td-actions .act-btn + .act-btn { margin-left: 6px; }
 
 .act-btn {
   display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px;

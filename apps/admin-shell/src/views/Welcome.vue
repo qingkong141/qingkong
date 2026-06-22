@@ -7,7 +7,7 @@ const authStore = useAuthStore()
   <div class="welcome">
     <div class="welcome-card">
       <div class="avatar-big">
-        <img v-if="authStore.user?.avatar" :src="authStore.user.avatar" class="avatar-img" />
+        <img v-if="authStore.user?.avatar" :src="authStore.user.avatar + '?t=' + authStore.avatarStamp" class="avatar-img" />
         <span v-else class="avatar-letter">
           {{ authStore.user?.username?.charAt(0).toUpperCase() }}
         </span>

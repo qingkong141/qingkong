@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
       'Access-Control-Allow-Origin': '*',
     },
     proxy: {
-      '/qingkong': {
+      '/yunpan': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       },

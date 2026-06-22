@@ -55,10 +55,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "http://localhost:3001",
         "http://localhost:3002",
         "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
         "http://127.0.0.1:3002",
     ],
     allow_credentials=True,
@@ -66,9 +64,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router.router, prefix="/qingkong")
-app.include_router(file_router.router, prefix="/qingkong")
-app.include_router(share_router.router, prefix="/qingkong")
+app.include_router(auth_router.router, prefix="/yunpan")
+app.include_router(file_router.router, prefix="/yunpan")
+app.include_router(share_router.router, prefix="/yunpan")
 
 @app.get("/health")
 async def health_check():

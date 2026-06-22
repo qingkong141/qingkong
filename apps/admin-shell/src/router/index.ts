@@ -9,6 +9,11 @@ const router = createRouter({
       meta: { public: true },
     },
     {
+      path: '/register',
+      component: () => import('../views/Register.vue'),
+      meta: { public: true },
+    },
+    {
       path: '/admin',
       component: () => import('../views/Layout.vue'),
       children: [
@@ -16,10 +21,15 @@ const router = createRouter({
           path: '',
           component: () => import('../views/Welcome.vue'),
         },
-        // 微应用占位路由：让 Vue Router 认识 /admin/drive/*
-        // :any(.*)* 中的 * 让参数可选，同时匹配 /admin/drive 和 /admin/drive/trash 等
-        // 不配置 component，<router-view> 渲染空内容，Layout 保持挂载
-        // qiankun 通过 #micro-container 接管实际渲染
+        {
+          path: 'profile',
+          component: () => import('../views/Profile.vue'),
+        },
+        {
+          path: 'users',
+          component: () => import('../views/AdminUsers.vue'),
+        },
+        // 微应用占位路由
         { path: 'drive/:any(.*)*', component: { template: '' } },
       ],
     },
@@ -41,8 +51,8 @@ router.beforeEach((to) => {
   if (!to.meta.public && !token) {
     return '/login'
   }
-  // 已登录访问登录页，直接跳后台
-  if (to.path === '/login' && token) {
+  // 已登录访问登录/注册页，直接跳后台
+  if ((to.path === '/login' || to.path === '/register') && token) {
     return '/admin'
   }
 })

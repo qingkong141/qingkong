@@ -6,20 +6,21 @@ import { useAuthStore } from '../stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const email = ref('')
+const account = ref('')
 const password = ref('')
+const showPw = ref(false)
 const error = ref('')
 const loading = ref(false)
 
 async function handleLogin() {
-  if (!email.value || !password.value) {
-    error.value = '请填写邮箱和密码'
+  if (!account.value || !password.value) {
+    error.value = '请填写用户名和密码'
     return
   }
   loading.value = true
   error.value = ''
   try {
-    await authStore.login({ email: email.value, password: password.value })
+    await authStore.login({ account: account.value, password: password.value })
     router.push('/admin')
   }
   catch (e: any) {
@@ -35,30 +36,36 @@ async function handleLogin() {
   <div class="login-wrap">
     <div class="login-card">
       <div class="brand">
-        <div class="brand-icon">Q</div>
+        <div class="brand-icon"><img src="/logo/logo.svg" alt="臻橙云盘" class="brand-logo-img" /></div>
         <h1>臻橙云盘</h1>
         <p class="brand-sub">欢迎回来，请登录你的账户</p>
       </div>
 
       <div class="form">
         <div class="field">
-          <label>邮箱</label>
+          <label>用户名 / 邮箱</label>
           <input
-            v-model="email"
-            type="email"
-            placeholder="your@email.com"
+            v-model="account"
+            type="text"
+            placeholder="用户名或邮箱"
             :class="{ 'has-error': error }"
           />
         </div>
         <div class="field">
           <label>密码</label>
-          <input
-            v-model="password"
-            type="password"
-            placeholder="••••••••"
-            :class="{ 'has-error': error }"
-            @keyup.enter="handleLogin"
-          />
+<div class="pw-wrap">
+            <input
+              v-model="password"
+              :type="showPw ? 'text' : 'password'"
+              placeholder="••••••••"
+              :class="{ 'has-error': error }"
+              @keyup.enter="handleLogin"
+            />
+            <button type="button" class="pw-toggle" tabindex="-1" @click="showPw = !showPw">
+              <svg v-if="showPw" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
         </div>
 
         <p v-if="error" class="error-msg">
@@ -70,6 +77,8 @@ async function handleLogin() {
           <span v-if="loading" class="spinner" />
           <span>{{ loading ? '登录中...' : '登录' }}</span>
         </button>
+
+        <p class="switch-link">还没有账户？<router-link to="/register">注册新账户</router-link></p>
       </div>
     </div>
   </div>
@@ -111,11 +120,11 @@ async function handleLogin() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  font-weight: 700;
-  color: #fff;
   margin-bottom: 16px;
+  padding: 8px;
+  box-sizing: border-box;
 }
+.brand-logo-img { width: 100%; height: 100%; object-fit: contain; filter: brightness(0) invert(1); }
 
 .brand h1 {
   margin: 0 0 6px;
@@ -216,6 +225,10 @@ input.has-error { border-color: #ef4444; }
 .btn-login:active:not(:disabled) { transform: translateY(0); }
 .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.switch-link { text-align:center;margin-top:16px;font-size:13px;color:var(--text-3,#9ca3af) }
+.switch-link a { color:var(--accent,#6366f1);text-decoration:none;font-weight:500 }
+.switch-link a:hover { text-decoration:underline }
+
 .spinner {
   width: 14px;
   height: 14px;
@@ -226,4 +239,9 @@ input.has-error { border-color: #ef4444; }
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.pw-wrap { position: relative; width: 100% }
+.pw-wrap input { width: 100%; padding-right: 36px !important }
+.pw-toggle { position: absolute; right: 1px; top: 1px; bottom: 1px; width: 34px; background: none; border: none; color: #a1a1aa; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color .15s }
+.pw-toggle:hover { color: #71717a }
 </style>

@@ -4,6 +4,7 @@ export interface User {
     email: string
     avatar: string | null
     bio: string | null
+    isAdmin: boolean
     storageUsed: number
     storageQuota: number
     createdAt: string
@@ -11,7 +12,7 @@ export interface User {
   }
   
   export interface LoginRequest {
-    email: string
+    account: string
     password: string
   }
   

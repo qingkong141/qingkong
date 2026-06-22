@@ -1,15 +1,14 @@
-from pydantic import EmailStr
 from app.schemas.base import BaseSchema
 
 
 class RegisterRequest(BaseSchema):
     username: str
-    email: EmailStr
+    email: str
     password: str
 
 
 class LoginRequest(BaseSchema):
-    email: EmailStr
+    account: str   # 用户名或邮箱均可
     password: str
 
 
@@ -24,3 +23,6 @@ class UserMeResponse(BaseSchema):
     username: str
     email: str
     avatar: str | None
+    is_admin: bool = False
+    storage_used: int = 0
+    storage_quota: int = 0

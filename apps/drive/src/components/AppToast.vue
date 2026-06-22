@@ -23,7 +23,7 @@ const { toasts } = useToast()
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  z-index: 9999;
+  z-index: 99999;
   pointer-events: none;
 }
 

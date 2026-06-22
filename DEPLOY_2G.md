@@ -1,4 +1,4 @@
-# 青空 QingKong 2G 服务器精简部署方案
+# 臻橙云盘 2G 服务器精简部署方案
 
 > 把吃内存的「数据库 + 对象存储」搬到云端托管，只在 2G 小机器上跑应用层。
 > 自用场景，目标：稳定、便宜、不折腾。
@@ -15,8 +15,7 @@
 | MinIO | 本机容器 ~250MB + 数据盘 | **外置 S3 兼容对象存储** |
 | Redis | 本机容器 ~50MB | **保留本机**（小，没必要外置） |
 | FastAPI backend | 本机容器 ~200MB | 保留 |
-| Nuxt SSR | 本机容器 ~200MB | 保留 |
-| Nginx | 本机容器 ~30MB | 保留 |
+| Nginx | 本机容器 ~30MB | 保留（含 admin-shell + drive 静态文件） |
 
 ### 内存预算（2GB 服务器）
 
@@ -25,11 +24,10 @@ OS（Ubuntu）          400 MB
 Docker daemon          100 MB
 Redis                   50 MB
 Backend (FastAPI)      200 MB
-Nuxt SSR               200 MB
 Nginx                   30 MB
 ─────────────────────────────
-已用                  ~980 MB
-剩余可用             ~1024 MB   ← 留给突发流量、构建、buff/cache
+已用                  ~780 MB
+剩余可用             ~1228 MB   ← 留给突发流量、构建、buff/cache
 ```
 
 舒服很多。原方案 2G 跑全栈基本一启动就 OOM。
@@ -129,7 +127,7 @@ R2 / OSS 的"公开访问"配置方式：
 
 ## 四、新的 compose 文件
 
-新建 [docker-compose.minimal.yml](docker-compose.minimal.yml)：去掉 postgres / minio，只留 redis + backend + nuxt-blog + nginx。
+新建 [docker-compose.minimal.yml](docker-compose.minimal.yml)：去掉 postgres / minio，只留 redis + backend + nginx。
 
 ```yaml
 name: qingkong-minimal
@@ -172,28 +170,14 @@ services:
     networks: [qingkong-net]
     mem_limit: 350m
 
-  nuxt-blog:
-    image: qingkong/nuxt-blog:latest
-    container_name: qingkong-nuxt-blog
-    restart: always
-    environment:
-      NITRO_PORT: 3000
-      NITRO_HOST: 0.0.0.0
-      NUXT_API_INTERNAL: http://backend:8000/qingkong
-    depends_on:
-      - backend
-    networks: [qingkong-net]
-    mem_limit: 300m
-
   nginx:
     image: qingkong/nginx:latest
     container_name: qingkong-nginx
     restart: always
     ports:
-      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTP_PORT:-3847}:80"
     depends_on:
       - backend
-      - nuxt-blog
     networks: [qingkong-net]
     mem_limit: 80m
 
@@ -216,7 +200,7 @@ networks:
 
 ```bash
 # ── Nginx ──
-NGINX_HTTP_PORT=80
+NGINX_HTTP_PORT=3847
 
 # ── 云数据库（Neon 给的连接串，注意改成 asyncpg 协议） ──
 # Neon 给的格式: postgresql://user:pass@xxx.neon.tech/dbname?sslmode=require
@@ -265,12 +249,10 @@ docker login --username=<你的用户名> registry.cn-hangzhou.aliyuncs.com
 
 # 2) 构建镜像（项目根目录执行）
 docker build -t registry.cn-hangzhou.aliyuncs.com/<你的命名空间>/qingkong-backend:latest -f backend/Dockerfile .
-docker build -t registry.cn-hangzhou.aliyuncs.com/<你的命名空间>/qingkong-nuxt-blog:latest -f apps/nuxt3-blog/Dockerfile .
 docker build -t registry.cn-hangzhou.aliyuncs.com/<你的命名空间>/qingkong-nginx:latest -f nginx/Dockerfile .
 
 # 3) 推送
 docker push registry.cn-hangzhou.aliyuncs.com/<你的命名空间>/qingkong-backend:latest
-docker push registry.cn-hangzhou.aliyuncs.com/<你的命名空间>/qingkong-nuxt-blog:latest
 docker push registry.cn-hangzhou.aliyuncs.com/<你的命名空间>/qingkong-nginx:latest
 ```
 

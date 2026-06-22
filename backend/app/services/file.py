@@ -6,7 +6,8 @@ from io import BytesIO
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.models.file import File
+from app.models.file import File, Share
+from app.models.user import User
 from app.core.storage import upload_to_minio, upload_stream_to_minio, delete_from_minio
 from app.core.redis import redis_client
 
@@ -219,6 +220,9 @@ async def upload_file(
         is_dir=False,
     )
     db.add(file_record)
+    owner = await db.get(User, owner_id)
+    if owner:
+        owner.storage_used += len(content)
     await db.commit()
     await db.refresh(file_record)
     return file_record, is_instant
@@ -354,6 +358,9 @@ async def complete_multipart(
         is_dir=False,
     )
     db.add(file_record)
+    owner = await db.get(User, owner_id)
+    if owner:
+        owner.storage_used += len(merged_bytes)
     await db.commit()
     await db.refresh(file_record)
 
@@ -416,6 +423,17 @@ async def permanent_delete(file_id: int, owner_id: int, db: AsyncSession) -> boo
     if file.is_dir:
         await _permanent_delete_children(file.id, owner_id, db)
 
+    # 先删关联分享，避免外键冲突
+    shares = await db.execute(select(Share).where(Share.file_id == file_id))
+    for s in shares.scalars().all():
+        await db.delete(s)
+
+    # 扣减存储用量
+    if not file.is_dir:
+        owner = await db.get(User, owner_id)
+        if owner and owner.storage_used >= file.size:
+            owner.storage_used -= file.size
+
     await db.delete(file)
     await db.commit()
     return True
@@ -438,6 +456,15 @@ async def _permanent_delete_children(parent_id: int, owner_id: int, db: AsyncSes
             )
             if not ref_count.scalar_one_or_none():
                 delete_from_minio(child.storage_key)
+        # 扣减用量
+        if not child.is_dir:
+            owner = await db.get(User, owner_id)
+            if owner and owner.storage_used >= child.size:
+                owner.storage_used -= child.size
+        # 先删关联分享
+        child_shares = await db.execute(select(Share).where(Share.file_id == child.id))
+        for s in child_shares.scalars().all():
+            await db.delete(s)
         await db.delete(child)
 
 

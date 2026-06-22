@@ -117,20 +117,18 @@ async def get_share_file_stream(
     token: str,
     password: str | None,
     db: AsyncSession,
+    file_id: int | None = None,
 ) -> tuple[Share, bytes, str, str]:
     """获取分享文件的原始数据（后端流代理用），返回 (share, data, mime_type, filename)"""
     share = await access_share(token, password, db)
+    target = await _resolve_shared_file(share, file_id, db)
 
-    if not share.file or not share.file.storage_key:
-        raise ValueError("文件不存在")
-
-    from io import BytesIO
     from app.core.storage import get_minio_client
     from app.core.config import settings
 
     client = get_minio_client()
     try:
-        response = client.get_object(settings.MINIO_BUCKET, share.file.storage_key)
+        response = client.get_object(settings.MINIO_BUCKET, target.storage_key)
         data = response.read()
     finally:
         response.close()
@@ -139,4 +137,81 @@ async def get_share_file_stream(
     share.download_count += 1
     await db.commit()
 
-    return share, data, share.file.mime_type or "application/octet-stream", share.file.name
+    return share, data, target.mime_type or "application/octet-stream", target.name
+
+
+async def browse_shared_folder(
+    token: str,
+    password: str | None,
+    parent_id: int | None,
+    db: AsyncSession,
+) -> tuple[Share, list[File]]:
+    """浏览分享的文件夹内容"""
+    share = await access_share(token, password, db)
+
+    if not share.file.is_dir:
+        raise ValueError("此分享不是文件夹，不支持浏览")
+
+    # 没传 parentId 就从分享的文件夹根开始
+    if parent_id is None:
+        parent_id = share.file.id
+
+    # 验证 parent_id 是目录且属于同一用户
+    parent = await db.get(File, parent_id)
+    if not parent or not parent.is_dir:
+        raise ValueError("目录不存在")
+    if parent.owner_id != share.owner_id:
+        raise ValueError("无权访问")
+
+    stmt = (
+        select(File)
+        .where(
+            File.parent_id == parent_id,
+            File.is_deleted == False,
+        )
+        .order_by(File.is_dir.desc(), File.name)
+    )
+    result = await db.execute(stmt)
+    return share, list(result.scalars().all())
+
+
+async def _resolve_shared_file(share: Share, file_id: int | None, db: AsyncSession) -> File:
+    """解析要操作的共享文件：file_id 为空则取分享文件本身，否则从分享文件夹中找"""
+    if file_id is None:
+        if not share.file or not share.file.storage_key:
+            raise ValueError("文件不存在")
+        return share.file
+
+    # 子文件：必须是分享文件夹的子文件
+    if not share.file.is_dir:
+        raise ValueError("此分享是单文件，不支持子文件操作")
+    child = await db.get(File, file_id)
+    if not child or child.is_dir or not child.storage_key:
+        raise ValueError("文件不存在或不是有效文件")
+    if child.owner_id != share.owner_id:
+        raise ValueError("无权访问")
+    return child
+
+
+async def download_shared_file(
+    token: str,
+    password: str | None,
+    db: AsyncSession,
+    file_id: int | None = None,
+) -> tuple[Share, str]:
+    """返回下载链接（仅 allow_download=True 时调用）。
+    file_id 为空则下载分享文件本身，否则下载分享文件夹内的子文件。
+    """
+    share = await access_share(token, password, db)
+
+    if not share.allow_download:
+        raise ValueError("此分享不允许下载，请使用在线播放")
+
+    target = await _resolve_shared_file(share, file_id, db)
+
+    share.download_count += 1
+    await db.commit()
+
+    from app.core.storage import get_presigned_url
+    url = get_presigned_url(target.storage_key, filename=target.name)
+    return share, url

@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import String, Integer, BigInteger, Text, DateTime, func
+from sqlalchemy import String, Integer, BigInteger, Text, DateTime, Boolean, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -14,6 +14,8 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False, comment="bcrypt加密后的密码")
     avatar: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="头像URL")
     bio: Mapped[str | None] = mapped_column(Text, nullable=True, comment="个人简介")
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, comment="是否为管理员")
+    is_approved: Mapped[bool] = mapped_column(Boolean, default=False, comment="管理员是否已审核通过")
     storage_used: Mapped[int] = mapped_column(BigInteger, default=0, comment="已用存储空间，单位字节")
     storage_quota: Mapped[int] = mapped_column(BigInteger, default=5 * 1024 * 1024 * 1024, comment="存储配额，默认5GB，单位字节")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), comment="创建时间")

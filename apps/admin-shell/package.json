@@ -1,5 +1,5 @@
 {
-  "name": "@qingkong/admin-shell",
+  "name": "@yunpan/admin-shell",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -8,8 +8,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@qingkong/shared-types": "workspace:*",
-    "@qingkong/shared-api": "workspace:*",
+    "@yunpan/shared-types": "workspace:*",
+    "@yunpan/shared-api": "workspace:*",
     "qiankun": "^2.10.16",
     "vue": "^3.4.0",
     "vue-router": "^4.3.0",
