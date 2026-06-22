@@ -1,6 +1,3 @@
-# syntax=docker/dockerfile:1.6
-# 构建上下文：仓库根目录
-
 # ── 阶段 1：构建静态子应用 ──────────────────────
 FROM node:24-alpine AS builder
 
@@ -13,18 +10,13 @@ COPY apps/admin-shell/package.json apps/admin-shell/package.json
 COPY apps/drive/package.json       apps/drive/package.json
 COPY packages packages
 
-RUN pnpm install \
-        --filter @qingkong/admin-shell... \
-        --filter @qingkong/drive... \
-        --frozen-lockfile
+RUN pnpm install --filter @yunpan/admin-shell... --filter @yunpan/drive...
 
 COPY apps/admin-shell apps/admin-shell
 COPY apps/drive       apps/drive
 
-# 生产构建：vite.config 会根据 NODE_ENV/mode 设置 base 前缀
 ENV NODE_ENV=production
-RUN pnpm --filter @qingkong/admin-shell build \
- && pnpm --filter @qingkong/drive       build
+RUN pnpm --filter @yunpan/admin-shell build && pnpm --filter @yunpan/drive build
 
 # ── 阶段 2：nginx + 静态资源 ────────────────────
 FROM nginx:1.27-alpine AS runtime

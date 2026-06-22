@@ -60,4 +60,4 @@ docker compose -f docker-compose.run.yml exec -T postgres \
 
 1. `docker compose -f docker-compose.run.yml ps` 看服务状态
 2. 有 `unhealthy` 就看该容器日志：`docker logs <容器名>`
-3. 搞不定把上面两条输出发给开发
+

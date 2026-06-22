@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.6
 # ── 阶段 1：依赖安装 ─────────────────────────────
 FROM python:3.12-slim AS deps
 
