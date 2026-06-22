@@ -33,7 +33,9 @@ async def register(data: RegisterRequest, db: AsyncSession) -> User:
 
 
 async def login(data: LoginRequest, db: AsyncSession) -> dict:
-    """登录，返回双 Token，refresh_token 存 Redis。account 支持用户名或邮箱"""
+    """登录，返回双 Token，refresh_token 存 Redis。account 支持用户名或邮箱。
+    首次用 admin 登录时，如果管理员不存在则自动创建。"""
+    import os
     from sqlalchemy import or_
 
     result = await db.execute(
@@ -42,6 +44,19 @@ async def login(data: LoginRequest, db: AsyncSession) -> dict:
         )
     )
     user = result.scalar_one_or_none()
+
+    # 首次登录：admin 不存在则自动创建
+    if not user and data.account == "admin" and data.password == os.getenv("ADMIN_PASSWORD", "org@2022"):
+        user = User(
+            username="admin",
+            email="admin@yunpan.local",
+            password_hash=hash_password(data.password),
+            is_admin=True,
+            is_approved=True,
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
 
     if not user or not verify_password(data.password, user.password_hash):
         raise ValueError("用户名或密码错误")

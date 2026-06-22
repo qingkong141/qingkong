@@ -185,9 +185,6 @@ ${COMPOSE} -f docker-compose.run.yml exec -T backend alembic upgrade head 2>/dev
     echo -e "${GREEN}✅ 数据库迁移完成${NC}" || \
     echo -e "${YELLOW}⚠ 迁移可能需要重试，稍后手动执行: ${COMPOSE} -f docker-compose.run.yml exec backend alembic upgrade head${NC}"
 
-${COMPOSE} -f docker-compose.run.yml exec -T backend python scripts/init_admin.py 2>/dev/null && \
-    echo -e "${GREEN}✅ 管理员账户已创建 (admin / org@2022)${NC}" || \
-    echo -e "${YELLOW}⚠ 管理员初始化需手动执行: ${COMPOSE} -f docker-compose.run.yml exec backend python scripts/init_admin.py${NC}"
 
 echo ""
 echo -e "${CYAN}╔══════════════════════════════════╗${NC}"
