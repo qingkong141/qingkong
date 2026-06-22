@@ -33,24 +33,29 @@ Copy-Item "$root\scripts\deploy.sh" "$outDir\"
 Copy-Item "$root\scripts\OPS_README.md" "$outDir\README.md" -ErrorAction SilentlyContinue
 
 # Create env template
-$envTemplate = @'
-DATABASE_URL=postgresql+asyncpg://yunpan:CHANGE_ME@postgres:5432/yunpan
-REDIS_URL=redis://:CHANGE_ME@redis:6379/0
+$pgPass = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 16 | % { [char]$_ })
+$redisPass = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 16 | % { [char]$_ })
+$jwtSecret = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 48 | % { [char]$_ })
+$minioPass = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 16 | % { [char]$_ })
+
+$envTemplate = @"
+DATABASE_URL=postgresql+asyncpg://yunpan:${pgPass}@postgres:5432/yunpan
+REDIS_URL=redis://:${redisPass}@redis:6379/0
 MINIO_ENDPOINT=minio:9000
 MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=CHANGE_ME
+MINIO_SECRET_KEY=${minioPass}
 MINIO_BUCKET=yunpan
-SECRET_KEY=CHANGE_ME_JWT_SECRET
+SECRET_KEY=${jwtSecret}
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7
 DEBUG=false
 POSTGRES_DB=yunpan
 POSTGRES_USER=yunpan
-POSTGRES_PASSWORD=CHANGE_ME
-REDIS_PASSWORD=CHANGE_ME
+POSTGRES_PASSWORD=${pgPass}
+REDIS_PASSWORD=${redisPass}
 MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=CHANGE_ME
-'@
+MINIO_ROOT_PASSWORD=${minioPass}
+"@
 $envTemplate | Out-File -Encoding utf8 "$outDir\.env.template"
 
 # Package

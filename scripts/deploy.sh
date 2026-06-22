@@ -43,10 +43,9 @@ echo -e "${GREEN}✅ Docker 已就绪 (${COMPOSE})${NC}"
 # ── 检查 .env ──────────────────────────
 if [ ! -f ".env" ]; then
     if [ -f ".env.template" ]; then
-        echo -e "${YELLOW}⚠ 未找到 .env 文件，从模板创建${NC}"
+        echo -e "${YELLOW}⚠ 未找到 .env，从模板创建（使用随机密码）${NC}"
         cp .env.template .env
-        echo -e "${RED}请先编辑 .env 文件，填入真实的数据库/Redis/MinIO/JWT 密码，然后重新运行本脚本${NC}"
-        exit 1
+        echo -e "${YELLOW}   建议部署完成后修改 .env 中的密码并重启服务${NC}"
     else
         echo -e "${RED}❌ 未找到 .env 或 .env.template 文件${NC}"
         exit 1
@@ -82,14 +81,14 @@ services:
     container_name: yunpan-postgres
     restart: always
     environment:
-      POSTGRES_DB: \${POSTGRES_DB:-yunpan}
-      POSTGRES_USER: \${POSTGRES_USER:-yunpan}
+      POSTGRES_DB: \${POSTGRES_DB}
+      POSTGRES_USER: \${POSTGRES_USER}
       POSTGRES_PASSWORD: \${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks: [yunpan-net]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \${POSTGRES_USER:-yunpan} -d \${POSTGRES_DB:-yunpan}"]
+      test: ["CMD-SHELL", "pg_isready -U \${POSTGRES_USER} -d \${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -137,9 +136,9 @@ services:
       MINIO_SECRET_KEY: \${MINIO_SECRET_KEY}
       MINIO_BUCKET: \${MINIO_BUCKET}
       SECRET_KEY: \${SECRET_KEY}
-      ACCESS_TOKEN_EXPIRE_MINUTES: \${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
-      REFRESH_TOKEN_EXPIRE_DAYS: \${REFRESH_TOKEN_EXPIRE_DAYS:-7}
-      DEBUG: \${DEBUG:-false}
+      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+      REFRESH_TOKEN_EXPIRE_DAYS: "7"
+      DEBUG: "false"
     depends_on:
       - postgres
       - redis
@@ -151,7 +150,7 @@ services:
     container_name: yunpan-nginx
     restart: always
     ports:
-      - "\${PORT:-3847}:80"
+      - "3847:80"
 ${NGINX_CONF}
     depends_on:
       - backend
