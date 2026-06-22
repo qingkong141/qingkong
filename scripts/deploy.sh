@@ -19,12 +19,26 @@ if ! command -v docker &>/dev/null; then
     exit 1
 fi
 
-if ! docker compose version &>/dev/null; then
-    echo -e "${RED}❌ docker compose 不可用，请升级 Docker 到 ≥20.10${NC}"
-    exit 1
+# 自动检测 compose 命令（新版内置 docker compose 或旧版独立 docker-compose）
+if docker compose version &>/dev/null 2>&1; then
+    COMPOSE="docker compose"
+elif command -v docker-compose &>/dev/null 2>&1; then
+    COMPOSE="docker-compose"
+else
+    echo -e "${YELLOW}⚠ 未检测到 docker compose，尝试自动安装 docker-compose...${NC}"
+    if command -v curl &>/dev/null; then
+        sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose 2>/dev/null && \
+        sudo chmod +x /usr/local/bin/docker-compose && \
+        COMPOSE="docker-compose"
+    fi
+    if [ -z "${COMPOSE:-}" ]; then
+        echo -e "${RED}❌ 自动安装失败，请手动安装 docker-compose 后再试${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✅ docker-compose 安装成功${NC}"
 fi
 
-echo -e "${GREEN}✅ Docker 已就绪${NC}"
+echo -e "${GREEN}✅ Docker 已就绪 (${COMPOSE})${NC}"
 
 # ── 检查 .env ──────────────────────────
 if [ ! -f ".env" ]; then
@@ -156,20 +170,20 @@ echo -e "${GREEN}✅ 配置就绪${NC}"
 
 # ── 启动 ──────────────────────────────
 echo -e "${YELLOW}[3/4] 启动服务...${NC}"
-docker compose -f docker-compose.run.yml --env-file .env up -d
+${COMPOSE} -f docker-compose.run.yml --env-file .env up -d
 
 echo ""
 echo -e "${GREEN}✅ 服务已启动${NC}"
 echo ""
-docker compose -f docker-compose.run.yml ps
+${COMPOSE} -f docker-compose.run.yml ps
 
 # ── 数据库迁移 ────────────────────────
 echo ""
 echo -e "${YELLOW}[4/4] 执行数据库迁移...${NC}"
 sleep 5  # 等 backend 完全就绪
-docker compose -f docker-compose.run.yml exec -T backend alembic upgrade head 2>/dev/null && \
+${COMPOSE} -f docker-compose.run.yml exec -T backend alembic upgrade head 2>/dev/null && \
     echo -e "${GREEN}✅ 数据库迁移完成${NC}" || \
-    echo -e "${YELLOW}⚠ 迁移可能需要重试，稍后手动执行: docker compose -f docker-compose.run.yml exec backend alembic upgrade head${NC}"
+    echo -e "${YELLOW}⚠ 迁移可能需要重试，稍后手动执行: ${COMPOSE} -f docker-compose.run.yml exec backend alembic upgrade head${NC}"
 
 echo ""
 echo -e "${CYAN}╔══════════════════════════════════╗${NC}"
@@ -177,5 +191,5 @@ echo -e "${CYAN}║   部署完成！                     ║${NC}"
 echo -e "${CYAN}╠══════════════════════════════════╣${NC}"
 echo -e "${CYAN}║  管理台:  http://<IP>:3847/admin ${NC}"
 echo -e "${CYAN}║  健康检查: curl /yunpan/health ${NC}"
-echo -e "${CYAN}║  查看日志: docker compose -f docker-compose.run.yml logs -f ${NC}"
+echo -e "${CYAN}║  查看日志: ${COMPOSE} -f docker-compose.run.yml logs -f ${NC}"
 echo -e "${CYAN}╚══════════════════════════════════╝${NC}"
