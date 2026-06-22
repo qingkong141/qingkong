@@ -76,8 +76,6 @@ fi
 # ── 生成附带 nginx 挂载的 compose 文件 ──
 echo -e "${YELLOW}[2/4] 准备 compose 配置...${NC}"
 cat > docker-compose.run.yml << COMPOSE
-name: yunpan
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -92,7 +90,9 @@ services:
     networks: [yunpan-net]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \${POSTGRES_USER:-yunpan} -d \${POSTGRES_DB:-yunpan}"]
-      interval: 10s; timeout: 5s; retries: 5
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -104,7 +104,9 @@ services:
     networks: [yunpan-net]
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "\${REDIS_PASSWORD}", "ping"]
-      interval: 10s; timeout: 5s; retries: 5
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   minio:
     image: minio/minio:latest
@@ -119,7 +121,9 @@ services:
     networks: [yunpan-net]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s; timeout: 5s; retries: 5
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     image: yunpan/backend:latest
@@ -137,9 +141,9 @@ services:
       REFRESH_TOKEN_EXPIRE_DAYS: \${REFRESH_TOKEN_EXPIRE_DAYS:-7}
       DEBUG: \${DEBUG:-false}
     depends_on:
-      postgres: { condition: service_healthy }
-      redis:    { condition: service_healthy }
-      minio:    { condition: service_healthy }
+      - postgres
+      - redis
+      - minio
     networks: [yunpan-net]
 
   nginx:
@@ -153,8 +157,10 @@ ${NGINX_CONF}
       - backend
     networks: [yunpan-net]
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
-      interval: 30s; timeout: 5s; retries: 3
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 volumes:
   postgres_data:
