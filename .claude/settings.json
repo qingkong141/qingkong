@@ -4,7 +4,14 @@
       "Bash(nslookup lsl141.com 8.8.8.8)",
       "WebFetch(domain:www.namecheap.com)",
       "PowerShell(& \"d:\\\\lsl\\\\qingkong\\\\scripts\\\\build-package.ps1\")",
-      "Bash(curl -s -X POST http://localhost:3847/yunpan/auth/login -H 'Content-Type: application/json' -d '{\"account\":\"admin\",\"password\":\"org@2022\"}')"
+      "Bash(curl -s -X POST http://localhost:3847/yunpan/auth/login -H 'Content-Type: application/json' -d '{\"account\":\"admin\",\"password\":\"org@2022\"}')",
+      "Bash(PYTHONPATH=. ./venv/Scripts/python.exe -c \"from app.core.config import settings; print\\('DB:', settings.DATABASE_URL\\)\")",
+      "Bash(taskkill /f /im python.exe)",
+      "Bash(taskkill /f /im uvicorn.exe)",
+      "Bash(netstat -ano)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(tasklist /fi \"PID eq 24556\")",
+      "Bash(kill -9 24556)"
     ]
   }
 }

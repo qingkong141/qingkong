@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => ({
     hmr: { overlay: false },
     proxy: {
       '/yunpan': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:8001',
         changeOrigin: true,
       },
     },

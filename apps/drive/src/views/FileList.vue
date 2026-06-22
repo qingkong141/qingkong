@@ -152,7 +152,8 @@ function startShareInline(f: FileItem) { shareFile.value = f; sharePassword.valu
 async function submitShare() {
   if (!shareFile.value) return
   try {
-    const hours = shareNeverExpire.value ? null : shareExpireUnit.value === 'd' ? shareExpireHours.value * 24 : shareExpireHours.value
+    const rawHours = shareExpireUnit.value === 'd' ? shareExpireHours.value * 24 : shareExpireHours.value
+    const hours = shareNeverExpire.value || rawHours < 0.5 ? null : rawHours
     const s = await shareApi.create(shareFile.value.id, sharePassword.value || null, hours, shareAllowDownload.value)
     copyLink(`${window.location.origin}/s/${s.token}`)
     toast.success('分享链接已复制'); showShareDialog.value = false

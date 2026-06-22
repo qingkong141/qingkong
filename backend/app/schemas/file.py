@@ -41,7 +41,7 @@ class MultipartInitRequest(BaseSchema):
 class CreateShareRequest(BaseSchema):
     file_id: int
     password: str | None = None
-    expire_hours: int | None = None
+    expire_hours: float | None = None
     allow_download: bool = True
 
 
