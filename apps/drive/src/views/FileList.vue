@@ -216,7 +216,7 @@ loadFiles()
             <td class="td-meta">{{ f.isDir ? '-' : fmtSize(f.size) }}</td>
             <td class="td-meta">{{ fmtDate(f.updatedAt) }}</td>
             <td class="td-actions" @dblclick.stop @click.stop>
-              <button v-if="!f.isDir" class="act-btn act-btn-sm" @click="startShareInline(f)">🔗</button>
+              <button class="act-btn act-btn-sm" @click="startShareInline(f)">🔗</button>
             </td>
           </tr>
         </tbody>
