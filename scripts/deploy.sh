@@ -38,7 +38,14 @@ else
     echo -e "${GREEN}✅ docker-compose 安装成功${NC}"
 fi
 
+COMPOSE_OPTS="-p yunpan"
+
 echo -e "${GREEN}✅ Docker 已就绪 (${COMPOSE})${NC}"
+
+# ── 停止旧容器（更新/重部署时自动处理，不会删数据） ──
+echo -e "${YELLOW}检查并停止旧服务...${NC}"
+docker rm -f yunpan-nginx yunpan-backend yunpan-postgres yunpan-redis yunpan-minio 2>/dev/null && \
+    echo -e "${GREEN}✅ 旧服务已停止${NC}" || true
 
 # ── 检查 .env ──────────────────────────
 if [ ! -f ".env" ]; then
@@ -170,20 +177,20 @@ echo -e "${GREEN}✅ 配置就绪${NC}"
 
 # ── 启动 ──────────────────────────────
 echo -e "${YELLOW}[3/4] 启动服务...${NC}"
-${COMPOSE} -f docker-compose.run.yml --env-file .env up -d
+${COMPOSE} ${COMPOSE_OPTS} -f docker-compose.run.yml --env-file .env up -d
 
 echo ""
 echo -e "${GREEN}✅ 服务已启动${NC}"
 echo ""
-${COMPOSE} -f docker-compose.run.yml ps
+${COMPOSE} ${COMPOSE_OPTS} -f docker-compose.run.yml ps
 
 # ── 数据库迁移 ────────────────────────
 echo ""
 echo -e "${YELLOW}[4/4] 执行数据库迁移...${NC}"
 sleep 5  # 等 backend 完全就绪
-${COMPOSE} -f docker-compose.run.yml exec -T backend alembic upgrade head 2>/dev/null && \
+${COMPOSE} ${COMPOSE_OPTS} -f docker-compose.run.yml exec -T backend alembic upgrade head 2>/dev/null && \
     echo -e "${GREEN}✅ 数据库迁移完成${NC}" || \
-    echo -e "${YELLOW}⚠ 迁移可能需要重试，稍后手动执行: ${COMPOSE} -f docker-compose.run.yml exec backend alembic upgrade head${NC}"
+    echo -e "${YELLOW}⚠ 迁移可能需要重试，稍后手动执行: ${COMPOSE} ${COMPOSE_OPTS} -f docker-compose.run.yml exec backend alembic upgrade head${NC}"
 
 
 echo ""
@@ -192,5 +199,5 @@ echo -e "${CYAN}║   部署完成！                     ║${NC}"
 echo -e "${CYAN}╠══════════════════════════════════╣${NC}"
 echo -e "${CYAN}║  管理台:  http://<IP>:3847/admin ${NC}"
 echo -e "${CYAN}║  健康检查: curl /yunpan/health ${NC}"
-echo -e "${CYAN}║  查看日志: ${COMPOSE} -f docker-compose.run.yml logs -f ${NC}"
+echo -e "${CYAN}║  查看日志: ${COMPOSE} ${COMPOSE_OPTS} -f docker-compose.run.yml logs -f ${NC}"
 echo -e "${CYAN}╚══════════════════════════════════╝${NC}"

@@ -38,6 +38,18 @@ bash deploy.sh
 
 防火墙放行 3847 即可。
 
+## 更新版本
+
+拿到新的 deploy.zip 后：
+
+```bash
+# 1. 强停旧服务
+docker rm -f yunpan-nginx yunpan-backend yunpan-postgres yunpan-redis yunpan-minio
+
+# 2. 解压新包部署
+unzip -o deploy.zip && bash deploy.sh
+```
+
 ## 日常操作
 
 ```bash
@@ -55,6 +67,14 @@ docker compose -f docker-compose.run.yml restart backend
 docker compose -f docker-compose.run.yml exec -T postgres \
   pg_dump -U yunpan yunpan > backup-$(date +%F).sql
 ```
+
+## 停止服务
+
+```bash
+docker rm -f yunpan-nginx yunpan-backend yunpan-postgres yunpan-redis yunpan-minio
+```
+
+数据在 Docker 卷里不会丢，重新部署会接上。
 
 ## 出问题了？
 

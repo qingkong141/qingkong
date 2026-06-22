@@ -2,7 +2,7 @@
   Build deploy.zip for yunpan
   Usage: powershell -ExecutionPolicy Bypass -File .\scripts\build-package.ps1
 #>
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
 Write-Host "=== yunpan deploy package builder ===" -ForegroundColor Cyan
 
@@ -42,29 +42,24 @@ Copy-Item "$root\scripts\deploy.sh" "$outDir\"
 Copy-Item "$root\scripts\OPS_README.md" "$outDir\README.md" -ErrorAction SilentlyContinue
 
 # Create env template
-$pgPass = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 16 | % { [char]$_ })
-$redisPass = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 16 | % { [char]$_ })
-$jwtSecret = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 48 | % { [char]$_ })
-$minioPass = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 16 | % { [char]$_ })
-
-$envTemplate = @"
-DATABASE_URL=postgresql+asyncpg://yunpan:${pgPass}@postgres:5432/yunpan
-REDIS_URL=redis://:${redisPass}@redis:6379/0
+$envTemplate = @'
+DATABASE_URL=postgresql+asyncpg://yunpan:YunPan2026Pg@postgres:5432/yunpan
+REDIS_URL=redis://:YunPan2026Redis@redis:6379/0
 MINIO_ENDPOINT=minio:9000
 MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=${minioPass}
+MINIO_SECRET_KEY=YunPan2026Minio
 MINIO_BUCKET=yunpan
-SECRET_KEY=${jwtSecret}
+SECRET_KEY=yunpan-jwt-secret-2026
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7
 DEBUG=false
 POSTGRES_DB=yunpan
 POSTGRES_USER=yunpan
-POSTGRES_PASSWORD=${pgPass}
-REDIS_PASSWORD=${redisPass}
+POSTGRES_PASSWORD=YunPan2026Pg
+REDIS_PASSWORD=YunPan2026Redis
 MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=${minioPass}
-"@
+MINIO_ROOT_PASSWORD=YunPan2026Minio
+'@
 $envTemplate | Out-File -Encoding utf8 "$outDir\.env.template"
 
 # Package
