@@ -38,6 +38,7 @@ class Share(Base):
     token: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, comment="分享短码，唯一，用于生成分享链接")
     password: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="提取密码，为空则无需密码")
     expire_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="过期时间，为空则永不过期")
+    allow_download: Mapped[bool] = mapped_column(Boolean, default=True, comment="是否允许下载，默认允许")
     download_count: Mapped[int] = mapped_column(Integer, default=0, comment="下载次数统计")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), comment="创建时间")
 

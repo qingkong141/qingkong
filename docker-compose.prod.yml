@@ -76,22 +76,6 @@ services:
       minio:    { condition: service_healthy }
     networks: [qingkong-net]
 
-  nuxt-blog:
-    build:
-      context: .
-      dockerfile: apps/nuxt3-blog/Dockerfile
-    image: qingkong/nuxt-blog:latest
-    container_name: qingkong-nuxt-blog-prod
-    restart: always
-    environment:
-      NITRO_PORT: 3000
-      NITRO_HOST: 0.0.0.0
-      # SSR 期间直连后端，避免走外网 nginx
-      NUXT_API_INTERNAL: http://backend:8000/qingkong
-    depends_on:
-      - backend
-    networks: [qingkong-net]
-
   nginx:
     build:
       context: .
@@ -105,7 +89,6 @@ services:
       # - "443:443"
     depends_on:
       - backend
-      - nuxt-blog
     networks: [qingkong-net]
 
 volumes:

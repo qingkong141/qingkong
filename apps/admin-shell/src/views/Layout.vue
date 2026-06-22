@@ -37,18 +37,6 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   {
-    name: 'blog-admin',
-    label: '博客管理',
-    path: '/admin/blog',
-    icon: '✦',
-    children: [
-      { label: '文章管理', path: '/admin/blog/posts' },
-      { label: '分类管理', path: '/admin/blog/categories' },
-      { label: '标签管理', path: '/admin/blog/tags' },
-      { label: '评论管理', path: '/admin/blog/comments' },
-    ],
-  },
-  {
     name: 'drive',
     label: '云盘',
     path: '/admin/drive',
@@ -61,7 +49,7 @@ const menuItems: MenuItem[] = [
   },
 ]
 
-const expandedMenus = ref<Set<string>>(new Set(['blog-admin']))
+const expandedMenus = ref<Set<string>>(new Set(['drive']))
 
 function toggleMenu(name: string) {
   if (expandedMenus.value.has(name)) expandedMenus.value.delete(name)
@@ -92,7 +80,7 @@ function isGroupActive(item: MenuItem) {
       <!-- logo 区域，与右侧顶栏等高 -->
       <div class="sidebar-header">
         <div class="brand-icon">Q</div>
-        <span v-if="!collapsed" class="brand-name">青空管理台</span>
+        <span v-if="!collapsed" class="brand-name">臻橙云盘</span>
       </div>
 
       <!-- 菜单 -->

@@ -36,6 +36,11 @@ renderWithQiankun({
 })
 
 if (!qiankunWindow.__POWERED_BY_QIANKUN__) {
-  const { app: vueApp } = createVueApp('/')
-  vueApp.mount('#app')
+  // 开发环境直接访问 3002 → 重定向到主壳 3000
+  if (import.meta.env.DEV) {
+    window.location.replace('http://localhost:3000/admin/drive')
+  } else {
+    // 生产环境直接访问 → 重定向到管理台
+    window.location.replace('/admin/drive')
+  }
 }

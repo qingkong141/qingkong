@@ -42,6 +42,7 @@ class CreateShareRequest(BaseSchema):
     file_id: int
     password: str | None = None
     expire_hours: int | None = None
+    allow_download: bool = True
 
 
 class ShareResponse(BaseSchema):
@@ -51,6 +52,7 @@ class ShareResponse(BaseSchema):
     has_password: bool
     password: str | None = None
     expire_at: datetime | None
+    allow_download: bool
     download_count: int
     created_at: datetime
     file_name: str

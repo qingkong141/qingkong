@@ -6,12 +6,6 @@ const isProd = import.meta.env.PROD
 
 export const microApps: RegistrableApp<Record<string, unknown>>[] = [
   {
-    name: 'blog-admin',
-    entry: isProd ? '/blog-admin/' : '//localhost:3001',
-    container: '#micro-container',
-    activeRule: '/admin/blog',
-  },
-  {
     name: 'drive',
     entry: isProd ? '/drive/' : '//localhost:3002',
     container: '#micro-container',

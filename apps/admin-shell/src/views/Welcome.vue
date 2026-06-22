@@ -15,10 +15,6 @@ const authStore = useAuthStore()
       <h2>{{ authStore.user?.username ? `你好，${authStore.user.username}` : '欢迎回来' }}</h2>
       <p>从左侧菜单选择功能模块开始使用</p>
       <div class="quick-links">
-        <router-link to="/admin/blog" class="quick-btn">
-          <span class="ql-icon">✦</span>
-          <span>博客管理</span>
-        </router-link>
         <router-link to="/admin/drive" class="quick-btn">
           <span class="ql-icon">◈</span>
           <span>云盘</span>

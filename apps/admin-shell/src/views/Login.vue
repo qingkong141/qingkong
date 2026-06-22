@@ -36,7 +36,7 @@ async function handleLogin() {
     <div class="login-card">
       <div class="brand">
         <div class="brand-icon">Q</div>
-        <h1>青空管理台</h1>
+        <h1>臻橙云盘</h1>
         <p class="brand-sub">欢迎回来，请登录你的账户</p>
       </div>
 

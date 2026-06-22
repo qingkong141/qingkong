@@ -47,13 +47,17 @@ onMounted(load)
       <div v-else-if="!shares.length" class="empty-state"><span class="empty-icon">🔗</span><br/>暂无分享</div>
 
       <table v-else class="table">
-        <thead><tr><th>文件</th><th>密码</th><th>过期时间</th><th>下载</th><th>操作</th></tr></thead>
+        <thead><tr><th>文件</th><th>密码</th><th>允许下载</th><th>过期时间</th><th>下载次数</th><th>操作</th></tr></thead>
         <tbody>
           <tr v-for="s in shares" :key="s.id" class="data-row">
             <td class="td-name"><span class="fi">{{ s.isDir ? '📁' : '📃' }}</span><span class="fn">{{ s.fileName }}</span></td>
             <td class="td-meta">
               <span v-if="s.password" class="pw-text" :title="s.password">{{ s.password }}</span>
               <span v-else class="badge badge-off">无</span>
+            </td>
+            <td class="td-meta">
+              <span v-if="s.allowDownload" class="badge badge-on">是</span>
+              <span v-else class="badge badge-off">否</span>
             </td>
             <td class="td-meta">{{ fmtDate(s.expireAt) }}</td>
             <td class="td-meta">{{ s.downloadCount }}</td>
@@ -96,6 +100,7 @@ onMounted(load)
   border: 1px solid var(--border, #e5e7eb); user-select: all;
 }
 .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-on { background: #ecfdf5; color: #059669; }
 .badge-off { background: #f3f4f6; color: #6b7280; }
 
 .act-btn {

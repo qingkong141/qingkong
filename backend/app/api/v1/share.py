@@ -24,6 +24,7 @@ def _share_to_response(share) -> ShareResponse:
         has_password=bool(share.password),
         password=share.password,
         expire_at=share.expire_at,
+        allow_download=share.allow_download,
         download_count=share.download_count,
         created_at=share.created_at,
         file_name=share.file.name if share.file else "",
@@ -44,6 +45,7 @@ async def create_share(
             owner_id=current_user.id,
             password=data.password,
             expire_hours=data.expire_hours,
+            allow_download=data.allow_download,
             db=db,
         )
     except ValueError as e:
@@ -65,6 +67,7 @@ async def list_shares(
             "hasPassword": bool(s.password),
             "password": s.password,
             "expireAt": s.expire_at.isoformat() if s.expire_at else None,
+            "allowDownload": s.allow_download,
             "downloadCount": s.download_count,
             "createdAt": s.created_at.isoformat() if s.created_at else None,
             "fileName": s.file.name if s.file else "",
@@ -117,6 +120,7 @@ async def access_share(
         "isDir": share.file.is_dir if share.file else False,
         "hasPassword": bool(share.password),
         "needPassword": False,
+        "allowDownload": share.allow_download,
     }
 
 
@@ -133,3 +137,32 @@ async def download_shared(
         raise HTTPException(status_code=403, detail=str(e))
 
     return {"url": url, "name": share.file.name}
+
+
+@router.get("/s/{token}/stream")
+async def stream_shared(
+    token: str,
+    password: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """后端流代理：视频/音频文件不暴露 MinIO 真实 URL，通过后端转发"""
+    from fastapi.responses import Response
+
+    try:
+        share, content, mime_type, filename = await share_service.get_share_file_stream(token, password, db)
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+    # 用 RFC 5987 编码非 ASCII 文件名
+    from urllib.parse import quote
+    encoded_filename = quote(filename)
+    return Response(
+        content=content,
+        media_type=mime_type,
+        headers={
+            "Content-Disposition": f"inline; filename*=UTF-8''{encoded_filename}",
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )

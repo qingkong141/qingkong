@@ -20,6 +20,4 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), comment="最后更新时间")
 
     # 关联关系
-    posts: Mapped[list["Post"]] = relationship(back_populates="author")
-    comments: Mapped[list["Comment"]] = relationship(back_populates="author")
     files: Mapped[list["File"]] = relationship(back_populates="owner")

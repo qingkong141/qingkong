@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(nslookup lsl141.com 8.8.8.8)",
+      "WebFetch(domain:www.namecheap.com)"
+    ]
+  }
+}

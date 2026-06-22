@@ -27,10 +27,14 @@ const renaming = ref<{ id: number; name: string } | null>(null)
 const showMoveDialog = ref(false)
 const moveTarget = ref<FileItem | null>(null)
 const moveParentId = ref<number | null>(null)
+const moveBreadcrumbs = ref<BreadcrumbItem[]>([{ id: null, name: '根目录' }])
+const moveFolders = ref<FileItem[]>([])
+const moveLoading = ref(false)
 const showShareDialog = ref(false)
 const shareFile = ref<FileItem | null>(null)
 const sharePassword = ref('')
 const shareExpireHours = ref<number | null>(null)
+const shareAllowDownload = ref(false)
 const preview = ref<{ show: boolean; url: string; name: string; mimeType: string | null }>({ show: false, url: '', name: '', mimeType: null })
 
 async function loadFiles() {
@@ -103,8 +107,37 @@ function closeCtx() { ctx.value.show = false }
 async function handleDownload() { const f = ctx.value.file; closeCtx(); if (!f || f.isDir) return; try { const { url } = await fileApi.download(f.id); window.open(url, '_blank') } catch (e: any) { toast.error(e.message) } }
 function startRename() { const f = ctx.value.file; closeCtx(); if (f) renaming.value = { id: f.id, name: f.name } }
 async function submitRename() { if (!renaming.value) return; try { await fileApi.rename(renaming.value.id, renaming.value.name); renaming.value = null; loadFiles(); toast.success('已重命名') } catch (e: any) { toast.error(e.message) } }
-function startMove() { moveTarget.value = ctx.value.file; closeCtx(); moveParentId.value = null; showMoveDialog.value = true }
-async function submitMove() { if (!moveTarget.value) return; try { await fileApi.move(moveTarget.value.id, moveParentId.value); showMoveDialog.value = false; moveTarget.value = null; loadFiles(); toast.success('已移动') } catch (e: any) { toast.error(e.message) } }
+async function loadMoveFolders(parentId: number | null) {
+  moveLoading.value = true
+  try { moveFolders.value = (await fileApi.list(parentId)).filter(f => f.isDir) }
+  catch { moveFolders.value = [] }
+  finally { moveLoading.value = false }
+}
+async function openMoveFolder(item: FileItem) {
+  moveParentId.value = item.id
+  moveBreadcrumbs.value.push({ id: item.id, name: item.name })
+  await loadMoveFolders(item.id)
+}
+async function navMoveBreadcrumb(i: number) {
+  moveParentId.value = moveBreadcrumbs.value[i].id
+  moveBreadcrumbs.value = moveBreadcrumbs.value.slice(0, i + 1)
+  await loadMoveFolders(moveParentId.value)
+}
+function startMove() {
+  moveTarget.value = ctx.value.file; closeCtx()
+  moveParentId.value = null
+  moveBreadcrumbs.value = [{ id: null, name: '根目录' }]
+  loadMoveFolders(null)
+  showMoveDialog.value = true
+}
+async function submitMove(dirId: number | null) {
+  if (!moveTarget.value) return
+  try {
+    await fileApi.move(moveTarget.value.id, dirId)
+    showMoveDialog.value = false; moveTarget.value = null
+    loadFiles(); toast.success('已移动')
+  } catch (e: any) { toast.error(e.message) }
+}
 
 async function handleDelete() {
   const f = ctx.value.file; closeCtx(); if (!f) return
@@ -112,11 +145,11 @@ async function handleDelete() {
   try { await fileApi.delete(f.id); loadFiles(); toast.success('已移入回收站') } catch (e: any) { toast.error(e.message) }
 }
 
-function startShare() { shareFile.value = ctx.value.file; closeCtx(); sharePassword.value = ''; shareExpireHours.value = null; showShareDialog.value = true }
+function startShare() { shareFile.value = ctx.value.file; closeCtx(); sharePassword.value = ''; shareExpireHours.value = null; shareAllowDownload.value = false; showShareDialog.value = true }
 async function submitShare() {
   if (!shareFile.value) return
   try {
-    const s = await shareApi.create(shareFile.value.id, sharePassword.value || null, shareExpireHours.value)
+    const s = await shareApi.create(shareFile.value.id, sharePassword.value || null, shareExpireHours.value, shareAllowDownload.value)
     await navigator.clipboard.writeText(`${window.location.origin}/s/${s.token}`)
     toast.success('分享链接已复制'); showShareDialog.value = false
   } catch (e: any) { toast.error(e.message) }
@@ -215,15 +248,36 @@ loadFiles()
     <!-- Move Dialog -->
     <Teleport to="body">
       <div v-if="showMoveDialog" class="modal-mask" @click.self="showMoveDialog = false">
-        <div class="modal">
-          <h3 class="modal-title">移动到</h3>
-          <div class="form-group">
-            <label class="form-label">目标文件夹 ID（空 = 根目录）</label>
-            <input v-model.number="moveParentId" type="number" class="form-input" />
+        <div class="modal modal-move">
+          <h3 class="modal-title">移动「{{ moveTarget?.name }}」到</h3>
+          <!-- 面包屑 -->
+          <div class="move-bc">
+            <span v-for="(bc, i) in moveBreadcrumbs" :key="i">
+              <a v-if="i < moveBreadcrumbs.length - 1" class="bc-link" @click="navMoveBreadcrumb(i)">{{ bc.name }}</a>
+              <span v-else class="bc-cur">{{ bc.name }}</span>
+              <span v-if="i < moveBreadcrumbs.length - 1" class="bc-sep"> / </span>
+            </span>
+          </div>
+          <!-- 当前目录按钮 -->
+          <div class="modal-actions modal-actions-top">
+            <button class="m-btn m-btn-primary" @click="submitMove(moveParentId)">📂 移动到当前目录</button>
+          </div>
+          <!-- 子文件夹列表 -->
+          <div class="move-list">
+            <div v-if="moveLoading" class="move-state">加载中…</div>
+            <div v-else-if="!moveFolders.length" class="move-state">此目录下没有文件夹</div>
+            <div
+              v-for="f in moveFolders" :key="f.id"
+              class="move-item"
+              @dblclick="openMoveFolder(f)"
+            >
+              <span class="fi">📁</span>
+              <span class="fn">{{ f.name }}</span>
+              <button class="act-btn move-enter-btn" @click="openMoveFolder(f)">进入</button>
+            </div>
           </div>
           <div class="modal-actions">
             <button class="m-btn" @click="showMoveDialog = false">取消</button>
-            <button class="m-btn m-btn-primary" @click="submitMove">移动</button>
           </div>
         </div>
       </div>
@@ -248,6 +302,13 @@ loadFiles()
               <option :value="168">7 天</option>
               <option :value="720">30 天</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">
+              <input type="checkbox" v-model="shareAllowDownload" class="checkbox-inline" />
+              允许下载
+            </label>
+            <p class="form-hint" v-if="!shareAllowDownload">关闭后仅可在线预览，不能下载</p>
           </div>
           <div class="modal-actions">
             <button class="m-btn" @click="showShareDialog = false">取消</button>
@@ -377,6 +438,8 @@ loadFiles()
 }
 .form-input:focus { border-color: var(--accent, #6366f1); box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
 select.form-input { cursor: pointer; }
+.checkbox-inline { width: auto; height: auto; margin-right: 6px; vertical-align: middle; cursor: pointer; accent-color: var(--accent, #6366f1); }
+.form-hint { margin: 4px 0 0; font-size: 12px; color: var(--text-3, #9ca3af); }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
 .m-btn {
   height: 34px; padding: 0 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer;
@@ -385,4 +448,17 @@ select.form-input { cursor: pointer; }
 .m-btn:hover { background: var(--bg-hover, #f3f4f6); }
 .m-btn.m-btn-primary { background: var(--accent, #6366f1); color: #fff; border-color: var(--accent, #6366f1); }
 .m-btn.m-btn-primary:hover { background: var(--accent, #6366f1); opacity: .9; }
+
+/* ── Move Dialog ── */
+.modal-move { width: 420px; max-height: 480px; display: flex; flex-direction: column; }
+.modal-actions-top { justify-content: center; margin-top: 0; margin-bottom: 10px; }
+.move-bc { font-size: 12px; margin-bottom: 8px; }
+.move-list { flex: 1; overflow-y: auto; max-height: 260px; border: 1px solid var(--border, #e5e7eb); border-radius: 8px; }
+.move-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--border, #e5e7eb); }
+.move-item:last-child { border-bottom: none; }
+.move-item:hover { background: var(--bg-hover, #f5f5ff); }
+.move-item .fi { font-size: 18px; flex-shrink: 0; }
+.move-item .fn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text-1, #111827); }
+.move-enter-btn { font-size: 11px; padding: 2px 8px; height: 26px; }
+.move-state { padding: 24px; text-align: center; color: var(--text-3, #9ca3af); font-size: 13px; }
 </style>

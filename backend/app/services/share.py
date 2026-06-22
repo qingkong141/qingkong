@@ -17,7 +17,8 @@ async def create_share(
     owner_id: int,
     password: str | None,
     expire_hours: int | None,
-    db: AsyncSession,
+    allow_download: bool = True,
+    db: AsyncSession = None,
 ) -> Share:
     file = await db.get(File, file_id)
     if not file or file.owner_id != owner_id:
@@ -40,6 +41,7 @@ async def create_share(
         token=token,
         password=password,
         expire_at=expire_at,
+        allow_download=allow_download,
     )
     db.add(share)
     await db.commit()
@@ -95,10 +97,13 @@ async def download_shared_file(
     password: str | None,
     db: AsyncSession,
 ) -> tuple[Share, str]:
+    """返回下载链接（仅 allow_download=True 时调用）"""
     share = await access_share(token, password, db)
 
     if not share.file or not share.file.storage_key:
         raise ValueError("文件不存在")
+    if not share.allow_download:
+        raise ValueError("此分享不允许下载，请使用在线播放")
 
     share.download_count += 1
     await db.commit()
@@ -106,3 +111,32 @@ async def download_shared_file(
     from app.core.storage import get_presigned_url
     url = get_presigned_url(share.file.storage_key, filename=share.file.name)
     return share, url
+
+
+async def get_share_file_stream(
+    token: str,
+    password: str | None,
+    db: AsyncSession,
+) -> tuple[Share, bytes, str, str]:
+    """获取分享文件的原始数据（后端流代理用），返回 (share, data, mime_type, filename)"""
+    share = await access_share(token, password, db)
+
+    if not share.file or not share.file.storage_key:
+        raise ValueError("文件不存在")
+
+    from io import BytesIO
+    from app.core.storage import get_minio_client
+    from app.core.config import settings
+
+    client = get_minio_client()
+    try:
+        response = client.get_object(settings.MINIO_BUCKET, share.file.storage_key)
+        data = response.read()
+    finally:
+        response.close()
+        response.release_conn()
+
+    share.download_count += 1
+    await db.commit()
+
+    return share, data, share.file.mime_type or "application/octet-stream", share.file.name

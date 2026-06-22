@@ -23,6 +23,7 @@ export interface ShareItem {
   hasPassword: boolean
   password: string | null
   expireAt: string | null
+  allowDownload: boolean
   downloadCount: number
   createdAt: string
   fileName: string
@@ -132,8 +133,8 @@ export const fileApi = {
 }
 
 export const shareApi = {
-  create(fileId: number, password?: string | null, expireHours?: number | null) {
-    return apiClient.post<any, ShareItem>('/shares', { fileId, password, expireHours })
+  create(fileId: number, password?: string | null, expireHours?: number | null, allowDownload: boolean = true) {
+    return apiClient.post<any, ShareItem>('/shares', { fileId, password, expireHours, allowDownload })
   },
 
   list() {
