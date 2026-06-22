@@ -5,139 +5,187 @@
 ```
                    Internet
                       │
-                      ▼
-           ┌─── nginx :3847 ───────┐
-           │  (反代 + 静态资源)      │
-           └───────────┬────────────┘
-                       │
-    ┌──────────────────┼──────────────────┐
-    ▼                  ▼                  ▼
- admin-shell       FastAPI :8000      MinIO :9000
- drive 静态         (REST API)         (对象存储)
-                       │
-              ┌────────┴────────┐
-              ▼                 ▼
-          PostgreSQL          Redis
-             :5432             :6379
+                      ▼   :3847（唯一对外端口）
+           ┌─── nginx ──────────┐
+           │  (反代 + 静态资源)   │
+           └──────┬──────────────┘
+                  │ Docker 内网
+    ┌─────────────┼─────────────┐
+    ▼             ▼             ▼
+ admin-shell   backend:8912   MinIO:9000
+ drive 静态     (FastAPI)     (对象存储)
+                  │
+         ┌────────┴────────┐
+         ▼                 ▼
+     PostgreSQL:5432    Redis:6379
 ```
 
-- **所有浏览器请求同源**：统一通过 nginx `:3847` 入口
-- **admin-shell + drive 静态文件**：内嵌在 nginx 镜像的 `/usr/share/nginx/html/`
-- **API 路径**：`/yunpan/*` 反代到 FastAPI
+**关键**：只有 nginx 的 3847 端口对外，其余所有服务都在 Docker 内网通信，外部无法直接访问。
 
-## 路由表
+## 端口说明
 
-| 路径 | 目标 |
-|------|------|
-| `/` | 302 → `/admin` |
-| `/admin` | admin-shell 静态（qiankun 主壳） |
-| `/login` `/s/:token` | admin-shell SPA 路由 |
-| `/drive/` | drive 静态（qiankun 子应用） |
-| `/yunpan/*` | FastAPI 后端 |
-| `/minio/*`（可选） | MinIO 直连 |
+| 端口 | 用途 | 对外 |
+|------|------|------|
+| 3847 | nginx 统一入口 | ✅ 唯一对外 |
+| 8912 | FastAPI 后端 | ❌ 仅 Docker 内网 |
+| 5432 | PostgreSQL | ❌ 仅 Docker 内网 |
+| 6379 | Redis | ❌ 仅 Docker 内网 |
+| 9000 | MinIO API | ❌ 仅 Docker 内网 |
+| 9001 | MinIO 控制台 | ❌ 仅 Docker 内网 |
 
-## 前置准备
+---
+
+## 一、发布前检测清单
+
+每次发布前在本机执行：
 
 ```bash
-cp .env.production.example .env.production
+# 1. 后端语法检查
+cd backend && python -c "from app.main import app; print('OK')"
 
-# 生成强密码
-openssl rand -hex 48      # JWT SECRET_KEY
-openssl rand -base64 24   # POSTGRES_PASSWORD / REDIS_PASSWORD / MINIO_ROOT_PASSWORD
+# 2. 前端构建检查（确保不报错）
+pnpm install
+pnpm build
 
-# 编辑 .env.production，替换所有 CHANGE_ME_* 值
+# 3. 确认所有迁移文件存在
+ls backend/alembic/versions/*.py
+
+# 4. 确认脚本就绪
+ls backend/scripts/init_admin.py
+ls backend/scripts/recalc_storage.py
+
+# 5. 确认环境变量模板完整
+cat backend/.env
 ```
 
-## 构建与启动
+---
+
+## 二、首次发布
+
+### 1. 准备 .env
 
 ```bash
-# 构建镜像 + 启动全部服务
-docker compose \
-  --env-file .env.production \
-  -f docker-compose.prod.yml \
-  up -d --build
-
-# 确认服务状态
-docker compose -f docker-compose.prod.yml ps
+# 在服务器上
+cp .env.template .env
+vim .env
 ```
 
-## 首次初始化
+必填项（生成强密码）：
 
 ```bash
-# 执行数据库迁移
+SECRET_KEY=<openssl rand -hex 48>
+POSTGRES_PASSWORD=<openssl rand -base64 24>
+REDIS_PASSWORD=<openssl rand -base64 24>
+MINIO_SECRET_KEY=<openssl rand -base64 24>
+```
+
+### 2. 构建并启动
+
+```bash
+docker compose --env-file .env -f docker-compose.prod.yml up -d --build
+```
+
+### 3. 初始化
+
+```bash
+# 数据库迁移
 docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
 
-# 初始化 MinIO bucket
-docker compose -f docker-compose.prod.yml exec backend python scripts/init_minio.py
+# 创建管理员 admin / org@2022
+docker compose -f docker-compose.prod.yml exec backend python scripts/init_admin.py
 ```
 
-## 访问
-
-- 管理台：`http://<服务器IP>:3847/admin`
-- API 文档：`http://<服务器IP>:3847/yunpan/docs`
-- 健康检查：`http://<服务器IP>:3847/yunpan/health`
-
-## 日常运维
+### 4. 验证
 
 ```bash
+# 健康检查
+curl http://localhost:3847/yunpan/health
+# → {"status":"ok"}
+
+# 确认管理台可访问
+curl -I http://localhost:3847/admin
+# → 200
+```
+
+浏览器打开 `http://<服务器IP>:3847/admin`，用 `admin / org@2022` 登录，首次登录后立即修改密码。
+
+---
+
+## 三、迭代发布
+
+每次发布只需要更新变化的服务：
+
+```bash
+# 拉取最新代码
+git pull
+
+# 只构建需要更新的镜像（例如 backend 或 nginx）
+docker compose --env-file .env -f docker-compose.prod.yml up -d --build backend
+docker compose --env-file .env -f docker-compose.prod.yml up -d --build nginx
+
+# 如果有新的数据库迁移
+docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+
+# 重启受影响的服务
+docker compose -f docker-compose.prod.yml restart backend
+```
+
+**无停机更新**（推荐生产环境）：
+```bash
+docker compose --env-file .env -f docker-compose.prod.yml up -d --build --scale backend=2 backend
+docker compose --env-file .env -f docker-compose.prod.yml up -d --build nginx
+```
+
+---
+
+## 四、常见运维
+
+```bash
+# 查看服务状态
+docker compose -f docker-compose.prod.yml ps
+
 # 查看日志
-docker compose -f docker-compose.prod.yml logs -f nginx
-docker compose -f docker-compose.prod.yml logs -f backend
+docker compose -f docker-compose.prod.yml logs -f --tail=100 backend
+docker compose -f docker-compose.prod.yml logs -f --tail=100 nginx
 
 # 重启单个服务
 docker compose -f docker-compose.prod.yml restart backend
 
-# 仅重建前端
-docker compose -f docker-compose.prod.yml build nginx && \
-docker compose -f docker-compose.prod.yml up -d nginx
-
 # 备份数据库
-docker compose -f docker-compose.prod.yml exec postgres \
-  pg_dump -U $POSTGRES_USER $POSTGRES_DB > backup-$(date +%F).sql
+docker compose -f docker-compose.prod.yml exec -T postgres \
+  pg_dump -U yunpan yunpan > backup-$(date +%F).sql
 ```
 
-## HTTPS（可选）
+## 五、HTTPS（可选）
 
-前置一层 Caddy 或宿主机 nginx 做 SSL 终止，内部容器保持 HTTP。
+前置一层 Caddy 或宿主机 nginx 做 SSL 终止：
 
 ```yaml
-# docker-compose.prod.yml nginx 服务内
-ports:
-  - "3847:80"
-  # 如需直接挂证书：
-  # - "443:443"
+# 把 nginx 的 ports 改为只监听内网
+# 前面加 caddy 容器：
+caddy:
+  image: caddy:2-alpine
+  ports:
+    - "443:443"
+  volumes:
+    - ./Caddyfile:/etc/caddy/Caddyfile:ro
 ```
 
-## 冒烟测试清单
+---
 
-上线前逐项检查：
+## 六、环境变量参考
 
-- [ ] `docker compose ps` 全部服务 `healthy`
-- [ ] `curl http://<host>:3847/yunpan/health` → `{"status":"ok"}`
-- [ ] 浏览器打开 `/admin` → 未登录跳 `/login`
-- [ ] 注册 → 登录 → 进入管理台
-- [ ] `/admin/drive` 子应用正常挂载
-- [ ] 上传文件 → 分片上传 / 秒传正常
-- [ ] 创建分享链接 → 无密码 / 有密码均可访问
-- [ ] 分享页视频/音频/图片/PDF 预览正常
-- [ ] 禁止下载时无法获取原始文件
-- [ ] 移动端分享页正常显示和播放
-- [ ] 关闭浏览器再打开 → 登录态保持（refresh token）
-
-## 环境变量参考
-
-| 变量 | 说明 |
-|------|------|
-| `POSTGRES_DB` | 数据库名 |
-| `POSTGRES_USER` | 数据库用户 |
-| `POSTGRES_PASSWORD` | 数据库密码 |
-| `REDIS_PASSWORD` | Redis 密码 |
-| `SECRET_KEY` | JWT 签名密钥 |
-| `MINIO_ROOT_USER` | MinIO 用户名 |
-| `MINIO_ROOT_PASSWORD` | MinIO 密码 |
-| `DATABASE_URL` | 数据库连接串 |
-| `REDIS_URL` | Redis 连接串 |
-| `MINIO_ENDPOINT` | MinIO 地址 |
-| `MINIO_ACCESS_KEY` | MinIO Access Key |
-| `MINIO_SECRET_KEY` | MinIO Secret Key |
-| `MINIO_BUCKET` | MinIO 桶名 |
+| 变量 | 说明 | 示例 |
+|------|------|------|
+| `DATABASE_URL` | 数据库连接 | `postgresql+asyncpg://yunpan:pass@postgres:5432/yunpan` |
+| `REDIS_URL` | Redis 连接 | `redis://:pass@redis:6379/0` |
+| `MINIO_ENDPOINT` | MinIO 地址 | `minio:9000` |
+| `MINIO_ACCESS_KEY` | MinIO 用户名 | `minioadmin` |
+| `MINIO_SECRET_KEY` | MinIO 密码 | `<强密码>` |
+| `MINIO_BUCKET` | 存储桶名 | `yunpan` |
+| `SECRET_KEY` | JWT 密钥 | `<openssl rand -hex 48>` |
+| `POSTGRES_DB` | 数据库名 | `yunpan` |
+| `POSTGRES_USER` | 数据库用户 | `yunpan` |
+| `POSTGRES_PASSWORD` | 数据库密码 | `<强密码>` |
+| `REDIS_PASSWORD` | Redis 密码 | `<强密码>` |
+| `PORT` | nginx 对外端口 | `3847` |
