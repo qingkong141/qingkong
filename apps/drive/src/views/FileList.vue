@@ -33,7 +33,9 @@ const moveLoading = ref(false)
 const showShareDialog = ref(false)
 const shareFile = ref<FileItem | null>(null)
 const sharePassword = ref('')
-const shareExpireHours = ref<number | null>(null)
+const shareExpireHours = ref(24)
+const shareNeverExpire = ref(false)
+const shareExpireUnit = ref<'h' | 'd'>('h')
 const shareAllowDownload = ref(false)
 const preview = ref<{ show: boolean; url: string; name: string; mimeType: string | null }>({ show: false, url: '', name: '', mimeType: null })
 
@@ -145,15 +147,29 @@ async function handleDelete() {
   try { await fileApi.delete(f.id); loadFiles(); toast.success('已移入回收站') } catch (e: any) { toast.error(e.message) }
 }
 
-function startShare() { shareFile.value = ctx.value.file; closeCtx(); sharePassword.value = ''; shareExpireHours.value = null; shareAllowDownload.value = false; showShareDialog.value = true }
-function startShareInline(f: FileItem) { shareFile.value = f; sharePassword.value = ''; shareExpireHours.value = null; shareAllowDownload.value = false; showShareDialog.value = true }
+function startShare() { shareFile.value = ctx.value.file; closeCtx(); sharePassword.value = ''; shareExpireHours.value = 1; shareNeverExpire.value = false; shareExpireUnit.value = 'd'; shareAllowDownload.value = false; showShareDialog.value = true }
+function startShareInline(f: FileItem) { shareFile.value = f; sharePassword.value = ''; shareExpireHours.value = 1; shareNeverExpire.value = false; shareExpireUnit.value = 'd'; shareAllowDownload.value = false; showShareDialog.value = true }
 async function submitShare() {
   if (!shareFile.value) return
   try {
-    const s = await shareApi.create(shareFile.value.id, sharePassword.value || null, shareExpireHours.value, shareAllowDownload.value)
-    await navigator.clipboard.writeText(`${window.location.origin}/s/${s.token}`)
+    const hours = shareNeverExpire.value ? null : shareExpireUnit.value === 'd' ? shareExpireHours.value * 24 : shareExpireHours.value
+    const s = await shareApi.create(shareFile.value.id, sharePassword.value || null, hours, shareAllowDownload.value)
+    copyLink(`${window.location.origin}/s/${s.token}`)
     toast.success('分享链接已复制'); showShareDialog.value = false
   } catch (e: any) { toast.error(e.message) }
+}
+
+function blockBadKeys(e: KeyboardEvent) { if (['e','E','+','-'].includes(e.key)) e.preventDefault() }
+function roundExpire() { shareExpireHours.value = +shareExpireHours.value.toFixed(2) }
+
+function onNeverExpireChange() {
+  if (shareNeverExpire.value) { shareExpireHours.value = 0; shareExpireUnit.value = 'd' }
+  else { shareExpireHours.value = 1 }
+}
+
+function copyLink(url: string) {
+  if (navigator.clipboard) { navigator.clipboard.writeText(url).catch(() => {}) }
+  else { prompt('分享链接：', url) }
 }
 
 function fmtSize(b: number) { if (!b) return '-'; const u = ['B','KB','MB','GB']; let i = 0, s = b; while (s >= 1024 && i < u.length - 1) { s /= 1024; i++ } return `${s.toFixed(i ? 1 : 0)} ${u[i]}` }
@@ -305,13 +321,15 @@ loadFiles()
           </div>
           <div class="form-group">
             <label class="form-label">有效期</label>
-            <select v-model="shareExpireHours" class="form-input">
-              <option :value="null">永不过期</option>
-              <option :value="1">1 小时</option>
-              <option :value="24">1 天</option>
-              <option :value="168">7 天</option>
-              <option :value="720">30 天</option>
-            </select>
+            <div class="expire-row">
+              <input v-model.number="shareExpireHours" type="number" min="0.5" step="0.5" class="form-input expire-inp" :class="{ empty: shareNeverExpire }" :disabled="shareNeverExpire" @keydown="blockBadKeys" @blur="roundExpire" />
+              <span class="expire-toggle" :class="{ active: !shareNeverExpire && shareExpireUnit === 'h' }" @click="!shareNeverExpire && (shareExpireUnit = 'h')">时</span>
+              <span class="expire-toggle" :class="{ active: !shareNeverExpire && shareExpireUnit === 'd' }" @click="!shareNeverExpire && (shareExpireUnit = 'd')">天</span>
+            </div>
+            <label class="form-label" style="margin-top:8px">
+              <input type="checkbox" v-model="shareNeverExpire" class="checkbox-inline" @change="onNeverExpireChange" />
+              永不过期
+            </label>
           </div>
           <div class="form-group">
             <label class="form-label">
@@ -453,6 +471,13 @@ loadFiles()
 .form-input:focus { border-color: var(--accent, #6366f1); box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
 select.form-input { cursor: pointer; }
 .checkbox-inline { width: auto; height: auto; margin-right: 6px; vertical-align: middle; cursor: pointer; accent-color: var(--accent, #6366f1); }
+.expire-row { display: flex; gap: 8px; align-items: center }
+.expire-inp { flex: 1; max-width: 120px }
+.expire-inp.empty { background: #f3f4f6; color: #d1d5db }
+.expire-unit { font-size: 13px; color: var(--text-2); white-space: nowrap }
+.expire-toggle { font-size: 12px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 6px; color: var(--text-2); cursor: pointer; transition: all .12s; user-select: none }
+.expire-toggle:hover { border-color: var(--accent); color: var(--accent) }
+.expire-toggle.active { background: var(--accent); color: #fff; border-color: var(--accent) }
 .form-hint { margin: 4px 0 0; font-size: 12px; color: var(--text-3, #9ca3af); }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
 .m-btn {

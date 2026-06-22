@@ -24,7 +24,9 @@ async function remove(id: number) {
 }
 
 function copyLink(token: string) {
-  navigator.clipboard.writeText(`${window.location.origin}/s/${token}`)
+  const url = `${window.location.origin}/s/${token}`
+  if (navigator.clipboard) { navigator.clipboard.writeText(url).catch(() => {}) }
+  else { prompt('分享链接：', url) }
   toast.success('链接已复制')
 }
 

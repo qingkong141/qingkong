@@ -20,13 +20,22 @@ docker compose -f docker-compose.prod.yml build --no-cache
 if ($LASTEXITCODE -ne 0) { throw "Build failed" }
 Pop-Location
 
+# Pull infrastructure images (in case they're not cached)
+Write-Host "[2/5] Pulling infrastructure images..." -ForegroundColor Yellow
+docker pull postgres:16-alpine
+docker pull redis:7-alpine
+docker pull minio/minio:latest
+
 # Export images
-Write-Host "[2/4] Exporting images..." -ForegroundColor Yellow
+Write-Host "[3/5] Exporting images..." -ForegroundColor Yellow
 docker save -o "$outDir\images\yunpan-backend.tar" yunpan/backend:latest
 docker save -o "$outDir\images\yunpan-nginx.tar"   yunpan/nginx:latest
+docker save -o "$outDir\images\postgres.tar"        postgres:16-alpine
+docker save -o "$outDir\images\redis.tar"            redis:7-alpine
+docker save -o "$outDir\images\minio.tar"            minio/minio:latest
 
 # Copy deploy files
-Write-Host "[3/4] Copying deploy files..." -ForegroundColor Yellow
+Write-Host "[4/5] Copying deploy files..." -ForegroundColor Yellow
 Copy-Item "$root\docker-compose.prod.yml" "$outDir\"
 Copy-Item "$root\nginx\nginx.conf" "$outDir\nginx.conf" -ErrorAction SilentlyContinue
 Copy-Item "$root\scripts\deploy.sh" "$outDir\"
@@ -59,7 +68,7 @@ MINIO_ROOT_PASSWORD=${minioPass}
 $envTemplate | Out-File -Encoding utf8 "$outDir\.env.template"
 
 # Package
-Write-Host "[4/4] Creating deploy.zip..." -ForegroundColor Yellow
+Write-Host "[5/5] Creating deploy.zip..." -ForegroundColor Yellow
 $zipPath = "$root\deploy.zip"
 Remove-Item $zipPath -ErrorAction SilentlyContinue
 Compress-Archive -Path "$outDir\*" -DestinationPath $zipPath

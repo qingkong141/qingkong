@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => ({
   ],
   server: {
     port: 3002,
+    hmr: { overlay: false },
     cors: true,
     headers: {
       'Access-Control-Allow-Origin': '*',

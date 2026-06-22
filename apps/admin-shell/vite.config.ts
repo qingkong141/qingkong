@@ -6,6 +6,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [vue()],
   server: {
     port: 3000,
+    hmr: { overlay: false },
     proxy: {
       '/yunpan': {
         target: 'http://127.0.0.1:8000',
