@@ -213,9 +213,9 @@ async def download_shared_file(
     share.download_count += 1
     await db.commit()
 
-    # 走后端流代理，不暴露 MinIO 地址
+    # 走后端代理，不暴露 MinIO 地址
     from urllib.parse import quote
     fid = f"&fileId={file_id}" if file_id else ""
     pw = f"&password={quote(password or '')}" if password else ""
-    url = f"/yunpan/s/{token}/stream?download=true{fid}{pw}"
+    url = f"/yunpan/s/{token}/dl?{fid}{pw}".replace("?&", "?")
     return share, url

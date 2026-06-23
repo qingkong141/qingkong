@@ -177,11 +177,30 @@ async def stream_shared(
     token: str,
     password: str | None = None,
     file_id: int | None = Query(default=None, alias="fileId"),
-    download: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
 ):
-    """后端流代理：视频/音频文件不暴露 MinIO 真实 URL，通过后端转发。
-    download=True 时强制下载而非在线播放。"""
+    """后端流代理：在线预览，不触发下载"""
+    return await _stream_response(token, password, file_id, db, download=False)
+
+
+@router.get("/s/{token}/dl")
+async def download_proxy(
+    token: str,
+    password: str | None = None,
+    file_id: int | None = Query(default=None, alias="fileId"),
+    db: AsyncSession = Depends(get_db),
+):
+    """后端下载代理：触发浏览器下载"""
+    return await _stream_response(token, password, file_id, db, download=True)
+
+
+async def _stream_response(
+    token: str,
+    password: str | None,
+    file_id: int | None,
+    db: AsyncSession,
+    download: bool,
+):
     from fastapi.responses import Response
 
     try:
