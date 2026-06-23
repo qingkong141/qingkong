@@ -153,7 +153,7 @@ async function submitShare() {
   if (!shareFile.value) return
   try {
     const rawHours = shareExpireUnit.value === 'd' ? shareExpireHours.value * 24 : shareExpireHours.value
-    const hours = shareNeverExpire.value || rawHours < 0.5 ? null : rawHours
+    const hours = shareNeverExpire.value || rawHours <= 0 ? null : rawHours
     const s = await shareApi.create(shareFile.value.id, sharePassword.value || null, hours, shareAllowDownload.value)
     copyLink(`${window.location.origin}/s/${s.token}`)
     toast.success('分享链接已复制'); showShareDialog.value = false
@@ -323,7 +323,7 @@ loadFiles()
           <div class="form-group">
             <label class="form-label">有效期</label>
             <div class="expire-row">
-              <input v-model.number="shareExpireHours" type="number" min="0.5" step="0.5" class="form-input expire-inp" :class="{ empty: shareNeverExpire }" :disabled="shareNeverExpire" @keydown="blockBadKeys" @blur="roundExpire" />
+              <input v-model.number="shareExpireHours" type="number" min="0.01" step="0.01" class="form-input expire-inp" :class="{ empty: shareNeverExpire }" :disabled="shareNeverExpire" @keydown="blockBadKeys" @blur="roundExpire" />
               <span class="expire-toggle" :class="{ active: !shareNeverExpire && shareExpireUnit === 'h' }" @click="!shareNeverExpire && (shareExpireUnit = 'h')">时</span>
               <span class="expire-toggle" :class="{ active: !shareNeverExpire && shareExpireUnit === 'd' }" @click="!shareNeverExpire && (shareExpireUnit = 'd')">天</span>
             </div>
