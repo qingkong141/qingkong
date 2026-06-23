@@ -21,6 +21,7 @@ def get_minio_client() -> Minio:
     return _client
 
 
+
 def upload_to_minio(key: str, data: bytes, content_type: str) -> str:
     client = get_minio_client()
     client.put_object(
@@ -54,7 +55,7 @@ def delete_from_minio(key: str):
 
 
 def get_presigned_url(key: str, expires_seconds: int = 600, filename: str | None = None) -> str:
-    """生成预签名下载 URL（强制下载）"""
+    """生成预签名下载 URL（强制下载），使用公网可达端点"""
     from datetime import timedelta
     from urllib.parse import quote
     client = get_minio_client()
@@ -70,7 +71,7 @@ def get_presigned_url(key: str, expires_seconds: int = 600, filename: str | None
 
 
 def get_streaming_url(key: str, filename: str, mime_type: str | None = None, expires_seconds: int = 3600) -> str:
-    """生成预签名在线播放 URL（浏览器内播放，不强制下载）。
+    """生成预签名在线播放 URL（浏览器内播放，不强制下载），使用公网可达端点。
     用于视频/音频在线观看，设置 Content-Type 和 inline disposition。
     """
     from datetime import timedelta

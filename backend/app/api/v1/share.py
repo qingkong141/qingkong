@@ -177,9 +177,11 @@ async def stream_shared(
     token: str,
     password: str | None = None,
     file_id: int | None = Query(default=None, alias="fileId"),
+    download: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
 ):
-    """后端流代理：视频/音频文件不暴露 MinIO 真实 URL，通过后端转发"""
+    """后端流代理：视频/音频文件不暴露 MinIO 真实 URL，通过后端转发。
+    download=True 时强制下载而非在线播放。"""
     from fastapi.responses import Response
 
     try:
@@ -187,16 +189,19 @@ async def stream_shared(
     except ValueError as e:
         raise HTTPException(status_code=403, detail=str(e))
 
-    # 用 RFC 5987 编码非 ASCII 文件名
-    from urllib.parse import quote
-    encoded_filename = quote(filename)
+    disposition = "attachment" if download else "inline"
+    headers = {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "X-Content-Type-Options": "nosniff",
+    }
+    if download:
+        from urllib.parse import quote
+        headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(filename)}"
+    else:
+        headers["Content-Disposition"] = "inline"
     return Response(
         content=content,
-        media_type=mime_type,
-        headers={
-            "Content-Disposition": f"inline; filename*=UTF-8''{encoded_filename}",
-            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-            "Pragma": "no-cache",
-            "X-Content-Type-Options": "nosniff",
-        },
+        media_type=mime_type if not download else "application/octet-stream",
+        headers=headers,
     )

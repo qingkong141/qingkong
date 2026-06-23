@@ -200,6 +200,7 @@ async def download_shared_file(
     file_id: int | None = None,
 ) -> tuple[Share, str]:
     """返回下载链接（仅 allow_download=True 时调用）。
+    返回后端代理 URL，浏览器不直接访问 MinIO。
     file_id 为空则下载分享文件本身，否则下载分享文件夹内的子文件。
     """
     share = await access_share(token, password, db)
@@ -212,6 +213,9 @@ async def download_shared_file(
     share.download_count += 1
     await db.commit()
 
-    from app.core.storage import get_presigned_url
-    url = get_presigned_url(target.storage_key, filename=target.name)
+    # 走后端流代理，不暴露 MinIO 地址
+    from urllib.parse import quote
+    fid = f"&fileId={file_id}" if file_id else ""
+    pw = f"&password={quote(password or '')}" if password else ""
+    url = f"/yunpan/s/{token}/stream?download=true{fid}{pw}"
     return share, url
