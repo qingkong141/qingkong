@@ -101,12 +101,13 @@ async function downloadFile(fileId?: number) {
   try {
     const params: any = password.value ? { password: password.value } : {}
     const data: any = await apiClient.post(`/s/${token}/download${fileId ? `?fileId=${fileId}` : ''}`, params)
-    // 用隐藏 iframe 触发下载，不弹窗
-    const iframe = document.createElement('iframe')
-    iframe.style.display = 'none'
-    iframe.src = data.url
-    document.body.appendChild(iframe)
-    setTimeout(() => document.body.removeChild(iframe), 3000)
+    // 用 <a> 触发下载
+    const a = document.createElement('a')
+    a.href = data.url
+    a.style.display = 'none'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   } catch (e: any) { error.value = e?.message || '下载失败' }
 }
 

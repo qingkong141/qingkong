@@ -106,7 +106,7 @@ function clearDone() { uploads.value = uploads.value.filter(t => t.status === 'u
 function onCtx(e: MouseEvent, f: FileItem) { e.preventDefault(); ctx.value = { show: true, x: e.clientX, y: e.clientY, file: f } }
 function closeCtx() { ctx.value.show = false }
 
-async function handleDownload() { const f = ctx.value.file; closeCtx(); if (!f || f.isDir) return; try { const { url } = await fileApi.download(f.id); const iframe = document.createElement('iframe'); iframe.style.display = 'none'; iframe.src = url; document.body.appendChild(iframe); setTimeout(() => document.body.removeChild(iframe), 3000) } catch (e: any) { toast.error(e.message) } }
+async function handleDownload() { const f = ctx.value.file; closeCtx(); if (!f || f.isDir) return; try { const { url } = await fileApi.download(f.id); const a = document.createElement('a'); a.href = url; a.style.display = 'none'; document.body.appendChild(a); a.click(); document.body.removeChild(a) } catch (e: any) { toast.error(e.message) } }
 function startRename() { const f = ctx.value.file; closeCtx(); if (f) renaming.value = { id: f.id, name: f.name } }
 async function submitRename() { if (!renaming.value) return; try { await fileApi.rename(renaming.value.id, renaming.value.name); renaming.value = null; loadFiles(); toast.success('已重命名') } catch (e: any) { toast.error(e.message) } }
 async function loadMoveFolders(parentId: number | null) {
